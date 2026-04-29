@@ -73,3 +73,13 @@ crashlytics-build.properties
 # Temporary auto-generated Android Assets
 /[Aa]ssets/[Ss]treamingAssets/aa.meta
 /[Aa]ssets/[Ss]treamingAssets/aa/*
+/Assets/StreamingAssets
+
+# Firebase SDK 압축 파일
+Assets/firebase_unity_sdk*.zip
+
+# macOS / iOS용 (Windows 개발이면 불필요)
+Assets/Firebase/Plugins/**/*.bundle
+
+# Linux / 일부 Android 네이티브
+Assets/Firebase/Plugins/**/*.so
