@@ -6,11 +6,16 @@ using System.Threading.Tasks;
 public class AuthManager : GlobalSingleton<AuthManager>
 {
     private FirebaseAuth auth;
+    private FirebaseUser currentUser;
+    private TaskCompletionSource<bool> authStateReady;
 
     // 로그인한 사용자의 고유 ID를 저장하는 프로퍼티입니다. 로그인 상태를 확인할 때 사용됩니다.
     public string UserId { get; private set; }
     // UserId가 null 또는 빈 문자열이 아닌 경우 로그인된 상태로 간주하는 프로퍼티입니다. 로그인 여부를 쉽게 확인할 수 있도록 도와줍니다.
     public bool IsLoggedIn => !string.IsNullOrEmpty(UserId);
+
+    private UserDataService userDataService;
+    public UserData CurrentUserData { get; private set; }
 
     protected override void Awake()
     {
@@ -49,7 +54,44 @@ public class AuthManager : GlobalSingleton<AuthManager>
     private void InitAuth()
     {
         auth = FirebaseAuth.DefaultInstance;
+        authStateReady = new TaskCompletionSource<bool>();
+        auth.StateChanged += AuthStateChanged;
+        userDataService = new UserDataService();
+
+        AuthStateChanged(this, System.EventArgs.Empty);
         Debug.Log("[Auth] Firebase Authentication initialized.");
+    }
+
+    private void OnDestroy()
+    {
+        if (auth != null)
+        {
+            auth.StateChanged -= AuthStateChanged;
+            auth = null;
+        }
+    }
+
+    private void AuthStateChanged(object sender, System.EventArgs eventArgs)
+    {
+        FirebaseUser nextUser = auth.CurrentUser;
+
+        if (currentUser != nextUser)
+        {
+            currentUser = nextUser;
+            Debug.Log($"[Auth] StateChanged / UID: {currentUser?.UserId}");
+        }
+
+        authStateReady?.TrySetResult(true);
+    }
+
+    private async Task WaitForInitialAuthState()
+    {
+        if (authStateReady == null) return;
+
+        while (!authStateReady.Task.IsCompleted)
+        {
+            await Task.Yield();
+        }
     }
 
     /// <summary>
@@ -60,10 +102,40 @@ public class AuthManager : GlobalSingleton<AuthManager>
     {
         try
         {
-            var result = await auth.SignInAnonymouslyAsync();
-            UserId = result.User.UserId;
+            Debug.Log("[Auth] Firebase Ready");
 
-            Debug.Log($"[Auth] Login Success / UID: {UserId}");
+            await WaitForInitialAuthState();
+
+            Debug.Log($"[Auth] CurrentUser before sign in: {currentUser?.UserId}");
+
+            // 이미 로그인된 사용자가 있는 경우, 해당 사용자의 UID를 UserId에 저장합니다.
+            // 이렇게 하면 앱이 재시작되거나 사용자가 이미 로그인된 상태에서 다시 로그인할 때
+            // 기존 사용자 정보를 유지할 수 있습니다.
+            if (currentUser != null && currentUser.IsValid())
+            {
+                UserId = currentUser.UserId;
+                Debug.Log($"[Auth] Existing User / UID: {UserId}");
+            }
+            else
+            {
+                var result = await auth.SignInAnonymouslyAsync();
+                currentUser = result.User;
+                UserId = currentUser.UserId;
+                Debug.Log($"[Auth] New Anonymous Login / UID: {UserId}");
+            }
+
+            Debug.Log($"[Auth] Final UID: {UserId}");
+
+            Debug.Log("[Firestore] LoadOrCreate Start");
+
+            CurrentUserData = await userDataService.GetUserDataAsync(UserId);
+            if (CurrentUserData == null)
+            {
+                Debug.LogError($"[Auth] UserData load failed / UID: {UserId}");
+                return;
+            }
+
+            Debug.Log($"[Auth] UserData Loaded / Nickname: {CurrentUserData.Nickname}, ColorHex: {CurrentUserData.ColorHex}");
         }
         catch (System.Exception e)
         {
