@@ -83,3 +83,6 @@ Assets/Firebase/Plugins/**/*.bundle
 
 # Linux / 일부 Android 네이티브
 Assets/Firebase/Plugins/**/*.so
+
+# 옵시디언 관련
+ObsidianVault/.obsidian/workspace.json
