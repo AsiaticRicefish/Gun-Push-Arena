@@ -1,0 +1,191 @@
+{
+  "main": {
+    "id": "f8298a067d67a6e2",
+    "type": "split",
+    "children": [
+      {
+        "id": "8b155094def1c6ac",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "586bfdc16d7f687f",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "버그 리포트/260504/2026-05-04-firestore-local-persistence-issue.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "2026-05-04-firestore-local-persistence-issue"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "1ce722b316912a82",
+    "type": "split",
+    "children": [
+      {
+        "id": "245c08e88e529731",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "530a51824542dd63",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "파일 탐색기"
+            }
+          },
+          {
+            "id": "d4fe83ae9891d32b",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "검색"
+            }
+          },
+          {
+            "id": "c5619cc7e7dea8cb",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "북마크"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "13ce0982a65561e0",
+    "type": "split",
+    "children": [
+      {
+        "id": "0b143cca5a19d173",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "caca7950b2febcc0",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "버그 리포트/260504/2026-05-04-firestore-local-persistence-issue.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "2026-05-04-firestore-local-persistence-issue 의 백링크"
+            }
+          },
+          {
+            "id": "0e3c5ce1d1a3af82",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "버그 리포트/260504/2026-05-04-firestore-local-persistence-issue.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "2026-05-04-firestore-local-persistence-issue 의 나가는 링크"
+            }
+          },
+          {
+            "id": "d3188760de0337aa",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "태그"
+            }
+          },
+          {
+            "id": "1a868176a16064d2",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "모든 속성"
+            }
+          },
+          {
+            "id": "7ab3db4343d57605",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "버그 리포트/260504/2026-05-04-firestore-local-persistence-issue.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "2026-05-04-firestore-local-persistence-issue 의 개요"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:빠른 전환기 열기": false,
+      "graph:그래프 뷰 열기": false,
+      "canvas:새 캔버스 만들기": false,
+      "daily-notes:오늘의 일일 노트 열기": false,
+      "templates:템플릿 삽입": false,
+      "command-palette:명령어 팔레트 열기": false,
+      "bases:새 베이스 생성하기": false
+    }
+  },
+  "active": "530a51824542dd63",
+  "lastOpenFiles": [
+    "버그 리포트",
+    "버그 리포트/260504"
+  ]
+}
