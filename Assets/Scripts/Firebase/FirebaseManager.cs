@@ -1,6 +1,7 @@
 using UnityEngine;
 using Firebase;
 using Firebase.Extensions;
+using Firebase.Firestore;
 using Unity.VisualScripting;
 using System;
 
@@ -31,6 +32,7 @@ public class FirebaseManager : GlobalSingleton<FirebaseManager>
             if (dependencyStatus == DependencyStatus.Available)
             {
                 firebaseApp = FirebaseApp.DefaultInstance;
+                ConfigureFirestore();
                 InReady = true;
 
                 Debug.Log("[Firebase] Initialized successfully.");
@@ -41,5 +43,13 @@ public class FirebaseManager : GlobalSingleton<FirebaseManager>
                 Debug.LogError($"Could not resolve all Firebase dependencies: {dependencyStatus}");
             }
         });
+    }
+
+    private void ConfigureFirestore()
+    {
+        FirebaseFirestore firestore = FirebaseFirestore.DefaultInstance;
+        firestore.Settings.PersistenceEnabled = false;
+
+        Debug.Log("[Firestore] Local persistence disabled.");
     }
 }
