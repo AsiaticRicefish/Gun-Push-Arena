@@ -1,8 +1,6 @@
 using UnityEngine;
 using Unity.Netcode;
 using UnityEngine.InputSystem;
-using Unity.Collections;
-using Unity.VisualScripting;
 using System.Collections;
 
 public class PlayerController : NetworkBehaviour
@@ -55,7 +53,7 @@ public class PlayerController : NetworkBehaviour
         // 이미 PlayerData가 설정되어 있는 경우 로그를 출력하여 확인합니다.
         if (!string.IsNullOrEmpty(currentUid))
         {
-            ApplyPlayerVisual(currentUid);
+            ApplyPlayerVisual(PlayerData.Value);
         }
 
     }
@@ -68,7 +66,20 @@ public class PlayerController : NetworkBehaviour
             yield return null;
         }
 
-        RegisterUidServerRpc(AuthManager.Instance.UserId);
+        while (AuthManager.Instance.CurrentUserData == null)
+        {
+            yield return null;
+        }
+
+        UserData userData = AuthManager.Instance.CurrentUserData;
+        PlayerNetworkData playerData = new PlayerNetworkData
+        {
+            Uid = string.IsNullOrEmpty(userData.Uid) ? AuthManager.Instance.UserId : userData.Uid,
+            Nickname = string.IsNullOrEmpty(userData.Nickname) ? "Player" : userData.Nickname,
+            ColorHex = string.IsNullOrEmpty(userData.ColorHex) ? "#FFFFFF" : userData.ColorHex
+        };
+
+        RegisterPlayerDataServerRpc(playerData);
     }
 
     // 네트워크에서 제거될 때 입력을 비활성화하여 리소스 누수를 방지합니다
@@ -106,14 +117,11 @@ public class PlayerController : NetworkBehaviour
     /// <param name="uid"></param>
 
     [ServerRpc]
-    private void RegisterUidServerRpc(string uid)
+    private void RegisterPlayerDataServerRpc(PlayerNetworkData playerData)
     {
-        PlayerData.Value = new PlayerNetworkData
-        {
-            Uid = uid
-        };
+        PlayerData.Value = playerData;
 
-        Debug.Log($"[PlayerController] Registered UID: {uid}");
+        Debug.Log($"[PlayerController] Registered PlayerData: {playerData.Uid}, {playerData.Nickname}, {playerData.ColorHex}");
     }
 
     /// <summary>
@@ -123,64 +131,38 @@ public class PlayerController : NetworkBehaviour
     /// <param name="newValue"></param>
     private void OnPlayerDataChanged(PlayerNetworkData previousValue, PlayerNetworkData newValue)
     {
-        Debug.Log($"[PlayerController] UID Synced: {newValue.Uid}");
-        ApplyPlayerVisual(newValue.Uid.ToString());
+        Debug.Log($"[PlayerController] PlayerData Synced: {newValue.Uid}, {newValue.Nickname}, {newValue.ColorHex}");
+        ApplyPlayerVisual(newValue);
     }
 
-    private void ApplyPlayerVisual(string uid)
+    private void ApplyPlayerVisual(PlayerNetworkData playerData)
     {
+        string uid = playerData.Uid.ToString();
         if (string.IsNullOrEmpty(uid)) return;
 
-        string nickname = CreateNicknameFromUid(uid);
-        Color color = CreateColorFromUid(uid);
+        string nickname = playerData.Nickname.ToString();
+        string colorHex = playerData.ColorHex.ToString();
+
+        if (!TryCreateColorHex(colorHex, out Color color))
+        {
+            color = Color.white;
+            Debug.LogWarning($"[PlayerController] Invalid ColorHex: {colorHex}");
+        }
 
         ApplyColor(color);
 
         Debug.Log($"[PlayerController] Applied Visuals - Nickname: {nickname}, Color: {color}");
     }
 
-#region 플레이어 임시 커스터마이징
-
-    private string CreateNicknameFromUid(string uid)
+    private bool TryCreateColorHex(string colorHex, out Color color)
     {
-        int length = Mathf.Min(4, uid.Length);
-        return $"player_{uid.Substring(0, length)}";  
-    }
-
-    private Color CreateColorFromUid(string uid)
-    {
-        int hash = CreateStableHash(uid);
-
-        UnityEngine.Random.InitState(hash);
-
-        return new Color(
-            UnityEngine.Random.Range(0.2f, 1f),
-            UnityEngine.Random.Range(0.2f, 1f),
-            UnityEngine.Random.Range(0.2f, 1f)
-        );
-    }
-
-    /// <summary>
-    /// UID 문자열을 입력으로 받아 안정적인 해시 값을 생성하는 메서드입니다. 
-    /// FNV-1a 해시 알고리즘을 사용하여 동일한 UID에 대해 항상 동일한 해시 값을 반환하도록 구현되어 있습니다. 이 해시 값은 플레이어의 색상을 결정하는 데 사용됩니다.
-    /// </summary>
-    /// <param name="value"></param>
-    /// <returns></returns>
-
-    private int CreateStableHash(string value)
-    {
-        unchecked
+        if (string.IsNullOrEmpty(colorHex))
         {
-            int hash = (int)2166136261;
-
-            for (int i = 0; i < value.Length; i++)
-            {
-                hash ^= value[i];
-                hash *= 16777619;
-            }
-
-            return hash;
+            color = default;
+            return false;
         }
+
+        return ColorUtility.TryParseHtmlString(colorHex, out color);
     }
 
     private void ApplyColor(Color color)
@@ -190,7 +172,4 @@ public class PlayerController : NetworkBehaviour
             playerRenderer.material.color = color;
         }
     }   
-
-
-#endregion
 }
