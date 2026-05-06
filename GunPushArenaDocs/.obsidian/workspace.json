@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "버그 리포트/260504/2026-05-04-firestore-local-persistence-issue.md",
+                "file": "개발 기록/260504/260504 작업 회고.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "2026-05-04-firestore-local-persistence-issue"
+              "title": "260504 작업 회고"
             }
           }
         ]
@@ -185,7 +185,9 @@
   },
   "active": "530a51824542dd63",
   "lastOpenFiles": [
+    "개발 기록/260506/260506 작업 회고.md",
+    "개발 기록/260504/260504 작업 회고.md",
     "버그 리포트",
-    "버그 리포트/260504"
+    "개발 기록/260504"
   ]
 }
