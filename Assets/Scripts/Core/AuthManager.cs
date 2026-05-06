@@ -5,6 +5,11 @@ using System.Threading.Tasks;
 
 public class AuthManager : GlobalSingleton<AuthManager>
 {
+    [Header("Test")]
+    // 이 옵션을 활성화하면 매번 앱 시작 시 새로운 익명 사용자로 로그인하게 됩니다.
+    // 테스트용이라 실제 게임에서는 비활성화할 예정입니다.
+    [SerializeField] private bool AddUserTest;
+
     private FirebaseAuth auth;
     private FirebaseUser currentUser;
     private TaskCompletionSource<bool> authStateReady;
@@ -107,6 +112,15 @@ public class AuthManager : GlobalSingleton<AuthManager>
             await WaitForInitialAuthState();
 
             Debug.Log($"[Auth] CurrentUser before sign in: {currentUser?.UserId}");
+
+            if (AddUserTest && currentUser != null)
+            {
+                auth.SignOut();
+                currentUser = null;
+                UserId = null;
+                CurrentUserData = null;
+                Debug.Log("[Auth] AddUserTest enabled. Signed out existing user.");
+            }
 
             // 이미 로그인된 사용자가 있는 경우, 해당 사용자의 UID를 UserId에 저장합니다.
             // 이렇게 하면 앱이 재시작되거나 사용자가 이미 로그인된 상태에서 다시 로그인할 때

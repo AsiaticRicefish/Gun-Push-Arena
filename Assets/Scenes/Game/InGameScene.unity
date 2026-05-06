@@ -1693,6 +1693,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f6a393ebfd308454b829d08e101963ac, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AuthManager
+  AddUserTest: 0
 --- !u!4 &2017642094
 Transform:
   m_ObjectHideFlags: 0
