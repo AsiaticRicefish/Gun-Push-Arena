@@ -16,9 +16,9 @@ public class PlayerController : NetworkBehaviour
     [SerializeField] private Renderer playerRenderer;
 
     /// <summary>
-    /// 플레이어의 고유 ID를 네트워크 변수로 관리합니다. 서버에서만 쓰기 권한이 있으며, 모든 클라이언트가 읽을 수 있습니다.
+    /// 플레이어의 네트워크 동기화 데이터를 관리합니다. 서버에서만 쓰기 권한이 있으며, 모든 클라이언트가 읽을 수 있습니다.
     /// </summary>
-    public NetworkVariable<FixedString64Bytes> PlayerUid = new NetworkVariable<FixedString64Bytes>(
+    public NetworkVariable<PlayerNetworkData> PlayerData = new NetworkVariable<PlayerNetworkData>(
         default,
         NetworkVariableReadPermission.Everyone, // 값을 읽을 수 있는 대상 → 모든 클라이언트 (Everyone)
         NetworkVariableWritePermission.Server   // 값을 쓸 수 있는 대상 → 서버만 (Server)
@@ -39,20 +39,20 @@ public class PlayerController : NetworkBehaviour
     {
         Debug.Log($"[PlayerController] Spawned. IsOwner: {IsOwner}");
 
-        PlayerUid.OnValueChanged += OnPlayerUidChanged;
+        PlayerData.OnValueChanged += OnPlayerDataChanged;
 
         if (IsOwner)
         {
             input.Enable(); // Host만 입력 활성화
 
-            // 로그인된 사용자의 UID를 서버로 전송하여 PlayerUid 네트워크 변수를 업데이트합니다.
+            // 로그인된 사용자의 UID를 서버로 전송하여 PlayerData 네트워크 변수를 업데이트합니다.
 
             StartCoroutine(RegisterUidReady());
         }
 
-        string currentUid = PlayerUid.Value.ToString();
+        string currentUid = PlayerData.Value.Uid.ToString();
 
-        // 이미 PlayerUid가 설정되어 있는 경우 로그를 출력하여 확인합니다.
+        // 이미 PlayerData가 설정되어 있는 경우 로그를 출력하여 확인합니다.
         if (!string.IsNullOrEmpty(currentUid))
         {
             ApplyPlayerVisual(currentUid);
@@ -74,7 +74,7 @@ public class PlayerController : NetworkBehaviour
     // 네트워크에서 제거될 때 입력을 비활성화하여 리소스 누수를 방지합니다
     public override void OnNetworkDespawn()
     {
-        PlayerUid.OnValueChanged -= OnPlayerUidChanged;
+        PlayerData.OnValueChanged -= OnPlayerDataChanged;
         input.Disable();
     }
 
@@ -101,26 +101,30 @@ public class PlayerController : NetworkBehaviour
     }
 
     /// <summary>
-    /// 클라이언트에서 로그인된 사용자의 UID를 서버로 전송하여 PlayerUid 네트워크 변수를 업데이트하는 RPC입니다.
+    /// 클라이언트에서 로그인된 사용자의 UID를 서버로 전송하여 PlayerData 네트워크 변수를 업데이트하는 RPC입니다.
     /// </summary>
     /// <param name="uid"></param>
 
     [ServerRpc]
     private void RegisterUidServerRpc(string uid)
     {
-        PlayerUid.Value = uid;
+        PlayerData.Value = new PlayerNetworkData
+        {
+            Uid = uid
+        };
+
         Debug.Log($"[PlayerController] Registered UID: {uid}");
     }
 
     /// <summary>
-    /// PlayerUid 네트워크 변수의 값이 변경될 때마다 호출되는 콜백 메서드입니다. 변경된 UID 값을 로그로 출력하여 동기화 상태를 확인할 수 있도록 합니다.
+    /// PlayerData 네트워크 변수의 값이 변경될 때마다 호출되는 콜백 메서드입니다. 변경된 UID 값을 로그로 출력하여 동기화 상태를 확인할 수 있도록 합니다.
     /// </summary>
     /// <param name="previousValue"></param>
     /// <param name="newValue"></param>
-    private void OnPlayerUidChanged(FixedString64Bytes previousValue, FixedString64Bytes newValue)
+    private void OnPlayerDataChanged(PlayerNetworkData previousValue, PlayerNetworkData newValue)
     {
-        Debug.Log($"[PlayerController] UID Synced: {newValue}");
-        ApplyPlayerVisual(newValue.ToString());
+        Debug.Log($"[PlayerController] UID Synced: {newValue.Uid}");
+        ApplyPlayerVisual(newValue.Uid.ToString());
     }
 
     private void ApplyPlayerVisual(string uid)
