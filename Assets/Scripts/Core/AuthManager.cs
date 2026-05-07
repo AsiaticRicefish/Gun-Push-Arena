@@ -36,7 +36,7 @@ public class AuthManager : GlobalSingleton<AuthManager>
     {
         await WaitForFirebase();
         InitAuth();
-        await SignInAnonymously();
+       // await SignInAnonymously();
     }
 
     /// <summary>
@@ -99,6 +99,19 @@ public class AuthManager : GlobalSingleton<AuthManager>
         }
     }
 
+
+    /// <summary>
+    /// 게스트 로그인 시도
+    /// SignInAnonymously() 메서드를 호출하여 익명 로그인을 시도합니다.
+    /// 로그인이 성공하고 현재 유저 데이터가 있는 경우 로그인하도록 함
+    /// </summary>
+    /// <returns></returns>
+    public async Task<bool> GuestLoginAsync()
+    {
+        await SignInAnonymously();
+        return IsLoggedIn && CurrentUserData != null;
+    }
+
     /// <summary>
     /// 익명 로그인 시도 메서드입니다. SignInAnonymouslyAsync() 메서드를 사용하여 익명 로그인을 시도하고, 로그인 성공 시 UserId를 저장하고 로그를 출력합니다. 로그인 실패 시 예외를 캐치하여 에러 로그를 출력합니다.
     /// </summary>
@@ -119,7 +132,7 @@ public class AuthManager : GlobalSingleton<AuthManager>
                 currentUser = null;
                 UserId = null;
                 CurrentUserData = null;
-                Debug.Log("[Auth] AddUserTest enabled. Signed out existing user.");
+                Debug.Log("[Auth] AddUserTest 생성 위해 기존 사용자 로그아웃");
             }
 
             // 이미 로그인된 사용자가 있는 경우, 해당 사용자의 UID를 UserId에 저장합니다.
