@@ -86,3 +86,4 @@ Assets/Firebase/Plugins/**/*.so
 
 # 옵시디언 관련
 ObsidianVault/.obsidian/workspace.json
+/Assets/Imports

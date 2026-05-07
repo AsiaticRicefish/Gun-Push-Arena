@@ -113,6 +113,34 @@ public class AuthManager : GlobalSingleton<AuthManager>
     }
 
     /// <summary>
+    /// 닉네임 업데이트 
+    /// </summary>
+    /// <param name="nickname"></param>
+    /// <returns></returns>
+    public async Task<bool> UpdateNicknameAsync(string nickname)
+    {
+        if (!IsLoggedIn || CurrentUserData == null)
+        {
+            Debug.LogError("[Auth] 로그인 상태에서만 닉네임 업데이트 가능");
+            return false;
+        }
+
+        bool success = await userDataService.UpdateNicknameAsync(UserId, nickname);
+        if (!success)
+        {
+            Debug.LogError("[Auth] 닉네임 업데이트 실패");
+            return false;
+        }
+
+        CurrentUserData.Nickname = nickname;
+        CurrentUserData.IsNicknameSet = true;
+        CurrentUserData.UpdatedAt = Firebase.Firestore.Timestamp.GetCurrentTimestamp();
+
+        Debug.Log($"[Auth] 현재 유저 닉네임 업데이트: {nickname}");
+        return true;
+    }
+
+    /// <summary>
     /// 익명 로그인 시도 메서드입니다. SignInAnonymouslyAsync() 메서드를 사용하여 익명 로그인을 시도하고, 로그인 성공 시 UserId를 저장하고 로그를 출력합니다. 로그인 실패 시 예외를 캐치하여 에러 로그를 출력합니다.
     /// </summary>
     /// <returns></returns>

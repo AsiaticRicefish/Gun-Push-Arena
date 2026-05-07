@@ -1,5 +1,6 @@
 using UnityEngine;
 using Firebase.Firestore;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 public class UserDataService
@@ -31,6 +32,7 @@ public class UserDataService
                 Uid = uid,
                 Nickname = CreateDefaultNickname(uid),
                 ColorHex = CreateDefaultColorHex(uid),
+                IsNicknameSet = false,
                 CreatedAt = Timestamp.GetCurrentTimestamp(),
                 UpdatedAt = Timestamp.GetCurrentTimestamp()
             };
@@ -45,6 +47,30 @@ public class UserDataService
             return null;
         }
 
+    }
+
+    public async Task<bool> UpdateNicknameAsync(string uid, string nickname)
+    {
+        try
+        {
+            DocumentReference docRef = firestore.Collection("users").Document(uid);
+
+            Dictionary<string, object> updates = new Dictionary<string, object>
+            {
+                { "Nickname", nickname },
+                { "IsNicknameSet", true },
+                { "UpdatedAt", Timestamp.GetCurrentTimestamp() }
+            };
+
+            await docRef.UpdateAsync(updates);
+            Debug.Log($"[UserDataService] Nickname updated: {nickname}");
+            return true;
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"[UserDataService] Error updating nickname: {e}");
+            return false;
+        }
     }
 
     private string CreateDefaultNickname(string uid)
