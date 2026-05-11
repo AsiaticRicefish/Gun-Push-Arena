@@ -3,7 +3,7 @@ using Firebase.Auth;
 using Firebase.Extensions;
 using System.Threading.Tasks;
 
-public class AuthManager : GlobalSingleton<AuthManager>
+public class AuthManager : GlobalSingleton<AuthManager>, IAuthService
 {
     [Header("Test")]
     // 이 옵션을 활성화하면 매번 앱 시작 시 새로운 익명 사용자로 로그인하게 됩니다.

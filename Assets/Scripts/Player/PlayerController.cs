@@ -7,6 +7,10 @@ public class PlayerController : NetworkBehaviour
 {
     private PlayerInputAction input;
 
+    // 로그인된 사용자의 UID를 서버로 전송하기 위해 IAuthService 인터페이스를 사용하여 AuthManager에 접근합니다.
+    // 이를 통해 PlayerController가 AuthManager에 직접 의존하지 않고도 로그인 정보를 사용할 수 있도록 합니다.
+    private IAuthService authService;
+
     [Header("Movement")]
     [SerializeField] private float moveSpeed = 5f;
 
@@ -30,6 +34,11 @@ public class PlayerController : NetworkBehaviour
         {
             playerRenderer = GetComponent<Renderer>();
         }
+    }
+
+    public void Construct(IAuthService authService)
+    {
+        this.authService = authService;
     }
 
     // 여기서 네트워크 스폰 시 초기화 작업을 수행할 수 있습니다(Netcode 기준 진입점)
@@ -60,21 +69,24 @@ public class PlayerController : NetworkBehaviour
 
     private IEnumerator RegisterUidReady()
     {
+        IAuthService auth = authService ?? AuthManager.Instance;
+
         // AuthManager가 준비될 때까지 대기
-        while (AuthManager.Instance == null || !AuthManager.Instance.IsLoggedIn)
+        while (auth == null || !auth.IsLoggedIn)
+        {
+            auth = authService ?? AuthManager.Instance;
+            yield return null;
+        }
+
+        while (auth.CurrentUserData == null)
         {
             yield return null;
         }
 
-        while (AuthManager.Instance.CurrentUserData == null)
-        {
-            yield return null;
-        }
-
-        UserData userData = AuthManager.Instance.CurrentUserData;
+        UserData userData = auth.CurrentUserData;
         PlayerNetworkData playerData = new PlayerNetworkData
         {
-            Uid = string.IsNullOrEmpty(userData.Uid) ? AuthManager.Instance.UserId : userData.Uid,
+            Uid = string.IsNullOrEmpty(userData.Uid) ? auth.UserId : userData.Uid,
             Nickname = string.IsNullOrEmpty(userData.Nickname) ? "Player" : userData.Nickname,
             ColorHex = string.IsNullOrEmpty(userData.ColorHex) ? "#FFFFFF" : userData.ColorHex
         };

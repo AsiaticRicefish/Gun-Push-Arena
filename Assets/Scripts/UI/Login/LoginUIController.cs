@@ -1,5 +1,7 @@
+using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using System.Threading.Tasks;
 
 [RequireComponent(typeof(LoginUIView))]
 public class LoginUIController : MonoBehaviour
@@ -9,6 +11,8 @@ public class LoginUIController : MonoBehaviour
 
     [Header("Scenes")]
     [SerializeField] private string lobbySceneName = "LobbyScene";
+
+    private IAuthService authService;
 
     private LoginPresenter presenter;
 
@@ -20,9 +24,14 @@ public class LoginUIController : MonoBehaviour
         }
     }
 
+    public void Construct(IAuthService authService)
+    {
+        this.authService = authService;
+    }
+
     private void Start()
     {
-        presenter = new LoginPresenter(view, AuthManager.Instance, LoadLobbyScene);
+        presenter = new LoginPresenter(view, authService, LoadLobbyScene);
         presenter.Initialize();
     }
 
