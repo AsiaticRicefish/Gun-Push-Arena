@@ -1,7 +1,4 @@
-using System.Runtime.InteropServices;
 using UnityEngine;
-using UnityEngine.SceneManagement;
-using System.Threading.Tasks;
 
 [RequireComponent(typeof(LoginUIView))]
 public class LoginUIController : MonoBehaviour
@@ -11,6 +8,7 @@ public class LoginUIController : MonoBehaviour
 
     [Header("Scenes")]
     [SerializeField] private string lobbySceneName = "LobbyScene";
+    [SerializeField] private SceneLoader sceneLoader;
 
     private IAuthService authService;
 
@@ -22,6 +20,11 @@ public class LoginUIController : MonoBehaviour
         {
             view = GetComponent<LoginUIView>();
         }
+
+        if (sceneLoader == null)
+        {
+            sceneLoader = GetComponent<SceneLoader>();
+        }
     }
 
     public void Construct(IAuthService authService)
@@ -31,7 +34,14 @@ public class LoginUIController : MonoBehaviour
 
     private void Start()
     {
-        presenter = new LoginPresenter(view, authService, LoadLobbyScene);
+        if (sceneLoader == null)
+        {
+            Debug.LogError("[LoginUIController] SceneLoader is missing.");
+            enabled = false;
+            return;
+        }
+
+        presenter = new LoginPresenter(view, authService, sceneLoader, lobbySceneName);
         presenter.Initialize();
     }
 
@@ -43,10 +53,5 @@ public class LoginUIController : MonoBehaviour
     public void OnClickConfirmNickname()
     {
         _ = presenter.HandleConfirmNicknameAsync();
-    }
-
-    private void LoadLobbyScene()
-    {
-        SceneManager.LoadScene(lobbySceneName);
     }
 }

@@ -1,17 +1,18 @@
-using System;
 using System.Threading.Tasks;
 
 public class LoginPresenter
 {
     private readonly LoginUIView view;
     private readonly IAuthService authService;
-    private readonly Action loadLobbyScene;
+    private readonly ISceneLoader sceneLoader;
+    private readonly string lobbySceneName;
 
-    public LoginPresenter(LoginUIView view, IAuthService authService, Action loadLobbyScene)
+    public LoginPresenter(LoginUIView view, IAuthService authService, ISceneLoader sceneLoader, string lobbySceneName)
     {
         this.view = view;
         this.authService = authService;
-        this.loadLobbyScene = loadLobbyScene;
+        this.sceneLoader = sceneLoader;
+        this.lobbySceneName = lobbySceneName;
     }
 
     public void Initialize()
@@ -32,7 +33,7 @@ public class LoginPresenter
 
             if (authService.CurrentUserData.IsNicknameSet)
             {
-                loadLobbyScene.Invoke();
+                await LoadLobbySceneAsync();
                 return;
             }
 
@@ -62,7 +63,7 @@ public class LoginPresenter
         if (success)
         {
             view.SetStatus("Nickname saved.");
-            loadLobbyScene.Invoke();
+            await LoadLobbySceneAsync();
             return;
         }
 
@@ -82,5 +83,10 @@ public class LoginPresenter
     private bool IsValidNickname(string nickname)
     {
         return nickname.Length >= 2 && nickname.Length <= 12;
+    }
+
+    private async Task LoadLobbySceneAsync()
+    {
+        await sceneLoader.LoadSceneAsync(lobbySceneName);
     }
 }
