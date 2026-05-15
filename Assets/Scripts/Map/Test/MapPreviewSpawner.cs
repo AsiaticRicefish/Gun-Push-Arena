@@ -12,6 +12,9 @@ public class MapPreviewSpawner : MonoBehaviour
     [SerializeField] private Color player1SpawnColor = Color.cyan;
     [SerializeField] private Color player2SpawnColor = Color.magenta;
 
+    private Vector2 mapOffset;
+    private Sprite squareSprite;
+
     private void Start()
     {
         SpawnPreviewMap();
@@ -32,6 +35,7 @@ public class MapPreviewSpawner : MonoBehaviour
         }
 
         ClearChildren();
+        mapOffset = new Vector2((layout.Width - 1) * 0.5f, (layout.Height - 1) * 0.5f);
         SpawnTiles(layout);
         SpawnMarker(layout.Player1Spawn, player1SpawnColor, "Player1Spawn");
         SpawnMarker(layout.Player2Spawn, player2SpawnColor, "Player2Spawn");
@@ -52,36 +56,54 @@ public class MapPreviewSpawner : MonoBehaviour
 
                 Color color = tileType == MapTileType.Wall ? wallColor : floorColor;
                 string objectName = $"{tileType}_{x}_{y}";
+                float zPosition = tileType == MapTileType.Wall ? -0.1f : 0f;
 
-                SpawnSquare(new Vector2Int(x, y), color, objectName, 1f);
+                SpawnSquare(new Vector2Int(x, y), color, objectName, 1f, zPosition);
             }
         }
     }
 
     private void SpawnMarker(Vector2Int cell, Color color, string objectName)
     {
-        SpawnSquare(cell, color, objectName, 0.55f);
+        SpawnSquare(cell, color, objectName, 0.55f, -0.2f);
     }
 
-    private void SpawnSquare(Vector2Int cell, Color color, string objectName, float scaleMultiplier)
+    private void SpawnSquare(Vector2Int cell, Color color, string objectName, float scaleMultiplier, float zPosition)
     {
-        GameObject square = GameObject.CreatePrimitive(PrimitiveType.Quad);
-        square.name = objectName;
+        GameObject square = new GameObject(objectName);
         square.transform.SetParent(transform);
 
-        square.transform.position = CellToWorld(cell);
+        square.transform.position = CellToWorld(cell, zPosition);
         square.transform.localScale = Vector3.one * tileSize * scaleMultiplier;
 
-        Renderer renderer = square.GetComponent<Renderer>();
-        renderer.material.color = color;
+        SpriteRenderer spriteRenderer = square.AddComponent<SpriteRenderer>();
+        spriteRenderer.sprite = GetSquareSprite();
+        spriteRenderer.color = color;
     }
 
-    private Vector3 CellToWorld(Vector2Int cell)
+    private Sprite GetSquareSprite()
     {
-        float x = cell.x * tileSize;
-        float y = cell.y * tileSize;
+        if (squareSprite != null)
+        {
+            return squareSprite;
+        }
 
-        return new Vector3(x, y, 0f);
+        Texture2D texture = Texture2D.whiteTexture;
+        squareSprite = Sprite.Create(
+        texture,
+        new Rect(0, 0, texture.width, texture.height),
+        new Vector2(0.5f, 0.5f),
+        texture.width);
+
+        return squareSprite;
+    }
+
+    private Vector3 CellToWorld(Vector2Int cell, float zPosition)
+    {
+        float x = (cell.x - mapOffset.x) * tileSize;
+        float y = (cell.y - mapOffset.y) * tileSize;
+
+        return new Vector3(x, y, zPosition);
     }
 
     private void ClearChildren()

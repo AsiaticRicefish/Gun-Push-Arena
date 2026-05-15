@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cc27f58e98e16184c94e5e76813d6cd3, type: 3}
+  m_Name: MapValidationSettings
+  m_EditorClassIdentifier: Assembly-CSharp::MapValidationSettings
+  minWidth: 8
+  maxWidth: 40
+  minHeight: 6
+  maxHeight: 25
+  minFloorCount: 30
+  minSpawnDistance: 5
+  requireSpawnPath: 1
