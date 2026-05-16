@@ -1,3 +1,4 @@
+using System;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
@@ -15,6 +16,20 @@ public class MapValidationSettings : ScriptableObject
     [SerializeField] private float minSpawnDistance = 5f; // 플레이어 스폰 사이의 최소 거리
     [SerializeField] private bool requireSpawnPath = true; // 두 스폰 사이에 길이 있어야 한다.
 
+
+    [Header("낙사 공간 생성에 대한 판단")]
+    // 최소 빈곳의 개수를 파악해서 낙사공간이 실제로 충분히 있는지 확인
+    [SerializeField] private int minEmptyCount = 25;
+
+    // 밀려서 떨어질 수 있는 절벽 가장자리가 충분한지 확인
+    [SerializeField] private int minFallEdgeCount = 20;
+
+    // 맵이 다시 벽 중심으로 돌아가지 않게 방지
+    [SerializeField] private int maxWallCount = 3;
+
+    public int MaxWallCount => maxWallCount;
+    public int MinFallEdgeCount => minFallEdgeCount;
+    public int MinEmptyCount => minEmptyCount;
     public int MinWidth => minWidth;
     public int MaxWidth => maxWidth;
     public int MinHeight => minHeight;

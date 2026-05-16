@@ -1,6 +1,5 @@
 using UnityEngine;
 
-// AI가 파싱을 실패하는 경우 보험용으로 만든 맵
 public class DefaultMapGenerator
 {
     private const int DefaultWidth = 17;
@@ -18,10 +17,11 @@ public class DefaultMapGenerator
         };
 
         FillEmpty(layout);
-        CreateArenaFloor(layout);
-        PlaceDefaultWalls(layout);
-        EnsureSafeSpawnArea(layout, layout.Player1Spawn);
-        EnsureSafeSpawnArea(layout, layout.Player2Spawn);
+        CreateDefaultFloor(layout);
+        CreateDefaultFallHoles(layout);
+        CreateDefaultSpawnHeadroom(layout);
+        EnsureSpawnFloor(layout, layout.Player1Spawn);
+        EnsureSpawnFloor(layout, layout.Player2Spawn);
 
         return layout;
     }
@@ -34,46 +34,47 @@ public class DefaultMapGenerator
         }
     }
 
-    private void CreateArenaFloor(MapLayoutData layout)
-    {
-        for (int y = 1; y < layout.Height - 1; y++)
-        {
-            for (int x = 1; x < layout.Width - 1; x++)
-            {
-                SetTile(layout, x, y, MapTileType.Floor);
-            }
-        }
-    }
-
-    // 맵 중앙에 고정된 벽을 배치하여 기본적인 맵을 만듭니다.
-    private void PlaceDefaultWalls(MapLayoutData layout)
+    private void CreateDefaultFloor(MapLayoutData layout)
     {
         int centerX = layout.Width / 2;
         int centerY = layout.Height / 2;
 
-        SetTile(layout, centerX, centerY - 2, MapTileType.Wall);
-        SetTile(layout, centerX, centerY + 2, MapTileType.Wall);
-        SetTile(layout, centerX - 2, centerY, MapTileType.Wall);
-        SetTile(layout, centerX + 2, centerY, MapTileType.Wall);
-
-        SetTile(layout, centerX - 4, centerY - 2, MapTileType.Wall);
-        SetTile(layout, centerX + 4, centerY + 2, MapTileType.Wall);
-    }
-
-    private void EnsureSafeSpawnArea(MapLayoutData layout, Vector2Int spawn)
-    {
-        for (int y = spawn.y - 1; y <= spawn.y + 1; y++)
+        for (int y = centerY - 2; y <= centerY + 2; y++)
         {
-            for (int x = spawn.x - 1; x <= spawn.x + 1; x++)
+            for (int x = centerX - 5; x <= centerX + 5; x++)
             {
-                if (!layout.IsInBounds(x, y))
-                {
-                    continue;
-                }
-
                 SetTile(layout, x, y, MapTileType.Floor);
             }
         }
+
+        for (int x = layout.Player1Spawn.x; x <= layout.Player2Spawn.x; x++)
+        {
+            SetTile(layout, x, centerY, MapTileType.Floor);
+        }
+    }
+
+    private void CreateDefaultFallHoles(MapLayoutData layout)
+    {
+        int centerX = layout.Width / 2;
+        int centerY = layout.Height / 2;
+
+        SetTile(layout, centerX, centerY + 1, MapTileType.Empty);
+        SetTile(layout, centerX, centerY - 1, MapTileType.Empty);
+        SetTile(layout, centerX - 2, centerY + 1, MapTileType.Empty);
+        SetTile(layout, centerX + 2, centerY - 1, MapTileType.Empty);
+    }
+
+    private void CreateDefaultSpawnHeadroom(MapLayoutData layout)
+    {
+        SetTile(layout, layout.Player1Spawn.x, layout.Player1Spawn.y + 1, MapTileType.Empty);
+        SetTile(layout, layout.Player1Spawn.x + 1, layout.Player1Spawn.y + 1, MapTileType.Empty);
+        SetTile(layout, layout.Player2Spawn.x, layout.Player2Spawn.y + 1, MapTileType.Empty);
+        SetTile(layout, layout.Player2Spawn.x - 1, layout.Player2Spawn.y + 1, MapTileType.Empty);
+    }
+
+    private void EnsureSpawnFloor(MapLayoutData layout, Vector2Int spawn)
+    {
+        SetTile(layout, spawn.x, spawn.y, MapTileType.Floor);
     }
 
     private void SetTile(MapLayoutData layout, int x, int y, MapTileType tileType)

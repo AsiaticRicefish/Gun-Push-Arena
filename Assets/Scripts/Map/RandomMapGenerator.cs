@@ -11,6 +11,15 @@ public class RandomMapGenerator
     // 벽 생성 확률
     private const float WallChance = 0.12f;
 
+    private const int FloorExpandSteps = 35; // 바닥 확장을 몇 번 시도할지
+    private const float FloorExpandChance = 0.65f; // 후보 위치를 실제 Floor로 바꿀 확률
+
+
+    // 구멍을 의도적으로 내는 역할
+    private const int FallHoleAttempts = 8; // 구멍 생성을 몇 번 시도할지
+    private const float FallHoleChance = 0.7f; // 선택한 Floor를 실제로 Empty로 바꿀 확률
+    private const int SpawnProtectRadius = 2; // 스폰 주변 몇 칸까지 구멍 생성을 막을지
+
     public MapLayoutData Generate()
     {
         MapLayoutData layout = new MapLayoutData
@@ -23,10 +32,13 @@ public class RandomMapGenerator
         };
 
         FillEmpty(layout);
-        CreateArenaFloor(layout);
-        PlaceRandomWalls(layout);
-        EnsureSafeSpawnArea(layout, layout.Player1Spawn);
-        EnsureSafeSpawnArea(layout, layout.Player2Spawn);
+        CreateCenterFloor(layout);
+        ExpandFoor(layout);
+        CreateFallHoles(layout);
+        EnsureSpawnFloor(layout, layout.Player1Spawn);
+        EnsureSpawnFloor(layout, layout.Player2Spawn);
+        EnsureSpawnHeadroom(layout, layout.Player1Spawn, 1);
+        EnsureSpawnHeadroom(layout, layout.Player2Spawn, -1);
 
         return layout;
     }
@@ -40,20 +52,95 @@ public class RandomMapGenerator
         }
     }
 
-    // 맵 안쪽을 Floor로 채웁니다
-    // x = 1부터 시작하고, layout.Width - 1 전까지만 반복하여 가장자리에는 벽이 생성될 수 있도록 합니다
-    private void CreateArenaFloor(MapLayoutData layout)
+    /// <summary>
+    /// 중앙에 작은 기본 발판을 생성합니다
+    /// </summary>
+    /// <param name="layout"></param>
+    private void CreateCenterFloor(MapLayoutData layout)
     {
-        for(int y = 1; y < layout.Height - 1; y++)
+        int centerX = layout.Width / 2;
+        int centerY = layout.Height / 2;
+
+        int halfWidth = 4;
+        int halfHeight = 2;
+
+        // 맵 중앙 좌표에서 왼쪽/오른쪽으로 halfWidth만큼, 아래/위로 halfHeight만큼 Floor를 채우기
+        for (int y = centerY - halfHeight; y <= centerY + halfHeight; y++)
         {
-            for(int x = 1; x < layout.Width - 1; x++)
+            for (int x = centerX - halfWidth; x <= centerX + halfWidth; x++)
             {
                 SetTile(layout, x, y, MapTileType.Floor);
             }
         }
     }
 
-#region 벽 생성 로직
+    #region Floor 확장 로직
+    /// <summary>
+    /// 기존 Floor 주변에 새로운 Floor를 랜덤하게 추가하여 발판 영역을 확장
+    /// </summary>
+    /// <param name="layout"></param>
+    private void ExpandFoor(MapLayoutData layout)
+    {
+        for (int i = 0; i < FloorExpandSteps; i++)
+        {
+            int x = UnityEngine.Random.Range(1, layout.Width - 1);
+            int y = UnityEngine.Random.Range(1, layout.Height - 1);
+
+            if (layout.GetTile(x, y) != MapTileType.Empty)
+            {
+                continue;
+            }
+
+            if (!HasNeighborFloor(layout, x, y))
+            {
+                continue;
+            }
+
+            if (UnityEngine.Random.value > FloorExpandChance)
+            {
+                continue;
+            }
+
+            SetTile(layout, x, y, MapTileType.Floor);
+
+
+        }
+    }
+
+    /// <summary>
+    /// 지정한 위치의 상하좌우 중 하나라도 Floor인지 확인
+    /// </summary>
+    /// <param name="layout"></param>
+    /// <param name="x"></param>
+    /// <param name="y"></param>
+    /// <returns></returns>
+    private bool HasNeighborFloor(MapLayoutData layout, int x, int y)
+    {
+        return IsFloor(layout, x + 1, y)
+            || IsFloor(layout, x - 1, y)
+            || IsFloor(layout, x, y + 1)
+            || IsFloor(layout, x, y - 1);
+    }
+
+    /// <summary>
+    /// 지정한 위치가 맵 안에 있고 Floor인지 확인
+    /// </summary>
+    /// <param name="layout"></param>
+    /// <param name="x"></param>
+    /// <param name="y"></param>
+    /// <returns></returns>
+    private bool IsFloor(MapLayoutData layout, int x, int y)
+    {
+        if (!layout.IsInBounds(x, y))
+        {
+            return false;
+        }
+
+        return layout.GetTile(x, y) == MapTileType.Floor;
+    }
+    #endregion
+
+    #region 벽 생성 로직
     /// <summary>
     /// 맵에서 일정 확률로 벽을 생성
     /// </summary>
@@ -62,7 +149,7 @@ public class RandomMapGenerator
     {
         for (int y = 2; y < layout.Height - 1; y++)
         {
-            for(int x = 2; x < layout.Width - 2; x++)
+            for (int x = 2; x < layout.Width - 2; x++)
             {
                 if (IsNearSpawn(layout, x, y))
                 {
@@ -89,32 +176,63 @@ public class RandomMapGenerator
     private bool IsNearSpawn(MapLayoutData layout, int x, int y)
     {
         Vector2Int position = new Vector2Int(x, y);
-        return Vector2Int.Distance(position, layout.Player1Spawn) <= 2f || 
+        return Vector2Int.Distance(position, layout.Player1Spawn) <= 2f ||
             Vector2Int.Distance(position, layout.Player2Spawn) <= 2f;
     }
 
-#endregion
+    #endregion
+
 
     /// <summary>
-    /// 플레이어 스폰 위치 주변에는 무조건 바닥이 생성되어야 됨
-    /// 스폰 위치를 중심으로 3x3 영역을 바닥으로 채워서 플레이어가 안전하게 스폰될 수 있도록 합니다.
+    /// 기존 Floor 일부를 Empty로 바꿔 맵 안쪽에 낙사 구멍을 만듭니다.
     /// </summary>
     /// <param name="layout"></param>
-    /// <param name="spawn"></param>
-    private void EnsureSafeSpawnArea(MapLayoutData layout, Vector2Int spawn)
+    private void CreateFallHoles(MapLayoutData layout)
     {
-        for (int y = spawn.y - 1; y <= spawn.y + 1; y++)
+        for (int i = 0; i < FallHoleAttempts; i++)
         {
-            for (int x = spawn.x - 1; x <= spawn.x + 1; x++)
-            {
-                if (!layout.IsInBounds(x, y)) // 검사하는 좌표가 맵 범위를 벗어나는 경우 건너뛰기
-                {
-                    continue;
-                }
+            int x = UnityEngine.Random.Range(1, layout.Width - 1);
+            int y = UnityEngine.Random.Range(1, layout.Height - 1);
 
-                SetTile(layout, x, y, MapTileType.Floor); // 맵 안에 있는 좌표라면 해당 칸을 Floor로 바꿉니다
+            if (layout.GetTile(x, y) != MapTileType.Floor)
+            {
+                continue;
             }
+
+            if (IsNearSpawn(layout, x, y, SpawnProtectRadius))
+            {
+                continue;
+            }
+
+            if (UnityEngine.Random.value > FallHoleChance)
+            {
+                continue;
+            }
+
+            SetTile(layout, x, y, MapTileType.Empty);
         }
+    }
+
+    private bool IsNearSpawn(MapLayoutData layout, int x, int y, float radius)
+    {
+        Vector2Int position = new Vector2Int(x, y);
+
+        return Vector2Int.Distance(position, layout.Player1Spawn) <= radius ||
+               Vector2Int.Distance(position, layout.Player2Spawn) <= radius;
+    }
+
+
+    // 플레이어가 서 있을 발밑 한 칸만 Floor로 보장
+    private void EnsureSpawnFloor(MapLayoutData layout, Vector2Int spawn)
+    {
+        SetTile(layout, spawn.x, spawn.y, MapTileType.Floor);
+    }
+
+    // 스폰 머리 위 공간을 비우는 메서드
+    private void EnsureSpawnHeadroom(MapLayoutData layout, Vector2Int spawn, int direction)
+    {
+        SetTile(layout, spawn.x, spawn.y + 1, MapTileType.Empty);
+        SetTile(layout, spawn.x + direction, spawn.y + 1, MapTileType.Empty);
     }
 
 
