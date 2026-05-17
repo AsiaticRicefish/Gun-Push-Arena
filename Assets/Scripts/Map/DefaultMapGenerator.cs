@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class DefaultMapGenerator
+public class DefaultMapGenerator : IMapGenerator
 {
     private const int DefaultWidth = 17;
     private const int DefaultHeight = 11;

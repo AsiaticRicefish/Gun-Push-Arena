@@ -2,7 +2,7 @@ using Unity.Android.Gradle.Manifest;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
-public class RandomMapGenerator
+public class RandomMapGenerator : IMapGenerator
 {
     // 생성할 맵의 기본 크기
     private const int DefaultWidth = 17;
