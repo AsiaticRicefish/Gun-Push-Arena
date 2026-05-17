@@ -148,6 +148,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0461ee2481665934d8f621bdeff0f240, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MapPreviewSpawner
+  previewMapSource: 1
+  aiPrompt: 
   validationSettings: {fileID: 11400000, guid: 3790d259c47d77e46ab9d8262ed99da4, type: 2}
   tileSize: 1
   floorColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}

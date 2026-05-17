@@ -2,6 +2,18 @@ using UnityEngine;
 
 public class MapPreviewSpawner : MonoBehaviour
 {
+    private enum PreviewMapSource
+    {
+        Random,
+        FakeAi,
+        Default
+    }
+
+    [SerializeField] private PreviewMapSource previewMapSource = PreviewMapSource.Random;
+
+    [Header("AI Preview")]
+    [SerializeField] private string aiPrompt = "bridge";
+
     [Header("Validation")]
     [SerializeField] private MapValidationSettings validationSettings;
 
@@ -22,15 +34,16 @@ public class MapPreviewSpawner : MonoBehaviour
 
     private void SpawnPreviewMap()
     {
-        RandomMapGenerator randomGenerator = new RandomMapGenerator();
         DefaultMapGenerator defaultGenerator = new DefaultMapGenerator();
         MapLayoutValidator validator = new MapLayoutValidator(validationSettings);
 
-        MapLayoutData layout = randomGenerator.Generate();
+        IMapGenerator generator = CreatePreviewGenerator(validator, defaultGenerator);
+
+        MapLayoutData layout = generator.Generate();
 
         if (!validator.Validate(layout, out string errorMessage))
         {
-            Debug.LogWarning($"Random map validation failed. Use default map. Reason: {errorMessage}");
+            Debug.LogWarning($"Preview map validation failed. Use default map. Reason: {errorMessage}");
             layout = defaultGenerator.Generate();
         }
 
@@ -39,6 +52,36 @@ public class MapPreviewSpawner : MonoBehaviour
         SpawnTiles(layout);
         SpawnMarker(layout.Player1Spawn, player1SpawnColor, "Player1Spawn");
         SpawnMarker(layout.Player2Spawn, player2SpawnColor, "Player2Spawn");
+    }
+
+    private IMapGenerator CreatePreviewGenerator(
+    MapLayoutValidator validator,
+    DefaultMapGenerator defaultGenerator)
+    {
+        switch (previewMapSource)
+        {
+            case PreviewMapSource.FakeAi:
+                AiMapGenerateRequest request = new AiMapGenerateRequest
+                {
+                    roomId = "preview_room",
+                    prompt = aiPrompt,
+                    width = 17,
+                    height = 11,
+                    playerCount = 2
+                };
+
+                return new AiMapGenerator(
+                    new FakeAiMapClient(),
+                    validator,
+                    defaultGenerator,
+                    request);
+
+            case PreviewMapSource.Default:
+                return defaultGenerator;
+
+            default:
+                return new RandomMapGenerator();
+        }
     }
 
     private void SpawnTiles(MapLayoutData layout)
