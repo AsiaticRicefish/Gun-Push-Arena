@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using UnityEngine;
 
 /// <summary>
@@ -8,7 +9,7 @@ using UnityEngine;
 /// </summary>
 public class AiMapGenerator : IMapGenerator
 {
-     private readonly IAiMapClient aiMapClient; // AI 맵 응답을 받아오는 역할
+    private readonly IAiMapClient aiMapClient; // AI 맵 응답을 받아오는 역할
     private readonly MapLayoutValidator validator; // AI가 만든 맵이 실제 게임 규칙을 만족하는지 검사
     private readonly DefaultMapGenerator defaultMapGenerator; // AI 응답 실패, 파싱 실패, 검증 실패 시 사용할 fallback
     private readonly AiMapGenerateRequest request; // 방장 프롬프트, roomId, width, height 같은 요청 데이터
@@ -27,7 +28,12 @@ public class AiMapGenerator : IMapGenerator
 
     public MapLayoutData Generate()
     {
-        AiMapGenerateResponse response = aiMapClient.GenerateMap(request);
+        return GenerateAsync().GetAwaiter().GetResult();
+    }
+
+    public async Task<MapLayoutData> GenerateAsync()
+    {
+        AiMapGenerateResponse response = await aiMapClient.GenerateMapAsync(request);
 
         if (response == null)
         {

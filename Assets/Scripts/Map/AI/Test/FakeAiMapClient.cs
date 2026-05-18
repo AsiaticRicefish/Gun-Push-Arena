@@ -1,15 +1,18 @@
+using System.Threading.Tasks;
 using UnityEngine;
 
 public class FakeAiMapClient : IAiMapClient
 {
-    public AiMapGenerateResponse GenerateMap(AiMapGenerateRequest request)
+    public Task<AiMapGenerateResponse> GenerateMapAsync(AiMapGenerateRequest request)
     {
-        return new AiMapGenerateResponse
+        AiMapGenerateResponse response = new AiMapGenerateResponse
         {
             success = true,
             errorMessage = string.Empty,
             map = CreateSampleMap(request?.prompt)
         };
+
+        return Task.FromResult(response);
     }
 
     private AiMapLayoutDto CreateSampleMap(string prompt)

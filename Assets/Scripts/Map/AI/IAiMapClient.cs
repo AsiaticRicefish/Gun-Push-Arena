@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using UnityEngine;
 
 /// <summary>
@@ -5,5 +6,5 @@ using UnityEngine;
 /// </summary>
 public interface IAiMapClient
 {
-    AiMapGenerateResponse GenerateMap(AiMapGenerateRequest request);
+    Task<AiMapGenerateResponse> GenerateMapAsync(AiMapGenerateRequest request);
 }
