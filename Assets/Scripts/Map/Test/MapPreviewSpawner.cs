@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Threading.Tasks;
 
 public class MapPreviewSpawner : MonoBehaviour
 {
@@ -6,13 +7,15 @@ public class MapPreviewSpawner : MonoBehaviour
     {
         Random,
         FakeAi,
+        Ollama,
         Default
     }
 
     [SerializeField] private PreviewMapSource previewMapSource = PreviewMapSource.Random;
 
     [Header("AI Preview")]
-    [SerializeField] private string aiPrompt = "bridge";
+    [SerializeField] private AiMapTheme aiMapTheme = AiMapTheme.Bridge;
+    [SerializeField] private string aiStyleHint = "";
 
     [Header("Validation")]
     [SerializeField] private MapValidationSettings validationSettings;
@@ -27,19 +30,28 @@ public class MapPreviewSpawner : MonoBehaviour
     private Vector2 mapOffset;
     private Sprite squareSprite;
 
-    private void Start()
+    private async void Start()
     {
-        SpawnPreviewMap();
+        await SpawnPreviewMapAsync();
     }
 
-    private void SpawnPreviewMap()
+    private async Task SpawnPreviewMapAsync()
     {
         DefaultMapGenerator defaultGenerator = new DefaultMapGenerator();
         MapLayoutValidator validator = new MapLayoutValidator(validationSettings);
 
         IMapGenerator generator = CreatePreviewGenerator(validator, defaultGenerator);
 
-        MapLayoutData layout = generator.Generate();
+        MapLayoutData layout;
+
+        if (generator is AiMapGenerator aiGenerator)
+        {
+            layout = await aiGenerator.GenerateAsync();
+        }
+        else
+        {
+            layout = generator.Generate();
+        }
 
         if (!validator.Validate(layout, out string errorMessage))
         {
@@ -64,7 +76,7 @@ public class MapPreviewSpawner : MonoBehaviour
                 AiMapGenerateRequest request = new AiMapGenerateRequest
                 {
                     roomId = "preview_room",
-                    prompt = aiPrompt,
+                    prompt = aiStyleHint,
                     width = 17,
                     height = 11,
                     playerCount = 2
@@ -75,6 +87,22 @@ public class MapPreviewSpawner : MonoBehaviour
                     validator,
                     defaultGenerator,
                     request);
+
+            case PreviewMapSource.Ollama:
+                AiMapGenerateRequest ollamaRequest = new AiMapGenerateRequest
+                {
+                    roomId = "preview_room",
+                    prompt = aiStyleHint,
+                    width = 17,
+                    height = 11,
+                    playerCount = 2
+                };
+
+                return new AiMapGenerator(
+                    new OllamaAiMapClient(aiMapTheme),
+                    validator,
+                    defaultGenerator,
+                    ollamaRequest);
 
             case PreviewMapSource.Default:
                 return defaultGenerator;
