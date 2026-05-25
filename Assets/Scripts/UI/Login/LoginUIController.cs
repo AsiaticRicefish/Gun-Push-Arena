@@ -41,6 +41,18 @@ public class LoginUIController : MonoBehaviour
             return;
         }
 
+        if (authService == null)
+        {
+            authService = AuthManager.Instance;
+        }
+
+        if (authService == null)
+        {
+            Debug.LogError("[LoginUIController] AuthService is missing.");
+            enabled = false;
+            return;
+        }
+
         presenter = new LoginPresenter(view, authService, sceneLoader, lobbySceneName);
         presenter.Initialize();
     }
