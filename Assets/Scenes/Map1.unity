@@ -119,59 +119,6 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!1 &566237979
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 566237981}
-  - component: {fileID: 566237980}
-  m_Layer: 0
-  m_Name: MapPreviewSpawner
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &566237980
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 566237979}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0461ee2481665934d8f621bdeff0f240, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::MapPreviewSpawner
-  previewMapSource: 2
-  aiMapTheme: 0
-  aiStyleHint: "\uADF8 \uAD6C\uBA4D\uC774 \uC5C4\uCCAD \uB9CE\uB3C4\uB85D \uB9CC\uB4E4\uC5B4\uC918"
-  validationSettings: {fileID: 11400000, guid: 3790d259c47d77e46ab9d8262ed99da4, type: 2}
-  tileSize: 1
-  floorColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
-  wallColor: {r: 0.1, g: 0.1, b: 0.1, a: 1}
-  player1SpawnColor: {r: 0, g: 1, b: 1, a: 1}
-  player2SpawnColor: {r: 1, g: 0, b: 1, a: 1}
---- !u!4 &566237981
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 566237979}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 703.4957, y: 633.8721, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1012301334
 GameObject:
   m_ObjectHideFlags: 0
@@ -314,4 +261,3 @@ SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
   - {fileID: 1012301337}
-  - {fileID: 566237981}
