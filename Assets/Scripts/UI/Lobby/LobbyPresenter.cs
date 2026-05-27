@@ -21,8 +21,22 @@ public class LobbyPresenter
     // 현재 로그인 유저 정보 표시와 내 플레이어 판별에 사용합니다.
     private readonly IAuthService authService;
 
+    // RoomStatus가 Starting으로 바뀌면 Presenter가 직접 씬 이동을 요청합니다.
+    // SceneLoader를 의존성으로 받아 MVP 구조에서 Presenter가 MonoBehaviour에 직접 묶이지 않게 합니다.
+    private readonly ISceneLoader sceneLoader;
+
+    // 현재 1차 구현에서는 Map1을 게임 씬으로 사용합니다.
+    private readonly string gameSceneName;
+
+    private readonly RelayGameStartService relayGameStartService;
+
     // 중복 클릭으로 같은 비동기 작업이 여러 번 실행되는 것을 막기 위한 플래그입니다.
     private bool isBusy;
+
+    // Firestore snapshot이 여러 번 들어와도 LoadSceneAsync가 중복 실행되지 않게 막습니다.
+    private bool isMovingToGameScene;
+
+    private bool isStartingRelayClient;
 
     // 현재 클라이언트가 알고 있는 내 ready 상태입니다.
     // Firestore player listener가 들어오면 서버 상태 기준으로 다시 동기화됩니다.
@@ -32,12 +46,18 @@ public class LobbyPresenter
         LobbyUIView view,
         RoomService roomService,
         RoomMapService roomMapService,
-        IAuthService authService)
+        IAuthService authService,
+        ISceneLoader sceneLoader,
+        string gameSceneName,
+        RelayGameStartService relayGameStartService)
     {
         this.view = view;
         this.roomService = roomService;
         this.roomMapService = roomMapService;
         this.authService = authService;
+        this.sceneLoader = sceneLoader;
+        this.gameSceneName = gameSceneName;
+        this.relayGameStartService = relayGameStartService;
     }
 
     public void Initialize()
@@ -243,6 +263,32 @@ public class LobbyPresenter
 
             // 현재는 room status를 Starting으로 바꾸는 단계입니다.
             // 다음 단계에서 Relay 생성과 Netcode 시작이 이어집니다.
+            if (relayGameStartService == null)
+            {
+                view.SetStatus("Relay service is missing.");
+                return;
+            }
+
+            RoomState room = roomService.CurrentRoom;
+            GameSessionContext.Instance.SetSession(
+                room.RoomId,
+                authService.UserId,
+                room.HostUserId);
+
+            int maxClientConnections = Mathf.Max(1, room.MaxPlayers - 1);
+            bool hostStarted = await relayGameStartService.StartHostWithRelayAsync(
+                room.RoomId,
+                authService.UserId,
+                maxClientConnections);
+
+            if (!hostStarted)
+            {
+                view.SetStatus("Failed to start relay host.");
+                return;
+            }
+
+            await roomService.SetRelayJoinCodeAsync(relayGameStartService.LastRelayJoinCode);
+
             await roomService.StartGameAsync();
         });
     }
@@ -260,6 +306,22 @@ public class LobbyPresenter
         // room 문서의 최신 상태를 화면에 반영합니다.
         view.SetRoomInfo(room);
 
+        // 방장이 StartGame을 누르면 room.Status가 Starting으로 저장됩니다.
+        // 방장과 참가자 모두 같은 Firestore 변경을 감지해서 동일한 타이밍에 Map1으로 이동합니다.
+        if (room.Status == RoomStatus.Starting.ToString())
+        {
+            if (roomService.IsCurrentUserHost())
+            {
+                MoveToGameSceneAsync(room).Forget();
+            }
+            else
+            {
+                StartRelayClientAndMoveAsync(room).Forget();
+            }
+
+            return;
+        }
+
         // Firestore에는 theme이 문자열로 저장되므로 enum으로 파싱해서 dropdown에 반영합니다.
         if (Enum.TryParse(room.SelectedTheme, out AiMapTheme theme))
         {
@@ -267,6 +329,127 @@ public class LobbyPresenter
         }
 
         RefreshViewState();
+    }
+
+    private async UniTask MoveToGameSceneAsync(RoomState room)
+    {
+        // Starting snapshot이 반복 수신되어도 씬 이동은 한 번만 진행합니다.
+        if (isMovingToGameScene)
+        {
+            return;
+        }
+
+        if (room == null)
+        {
+            view.SetStatus("Cannot start game. Room is missing.");
+            return;
+        }
+
+        if (room.FinalMap == null)
+        {
+            view.SetStatus("Cannot start game. Final map is missing.");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(gameSceneName))
+        {
+            view.SetStatus("Cannot start game. Game scene name is empty.");
+            return;
+        }
+
+        if (sceneLoader == null)
+        {
+            view.SetStatus("Cannot start game. SceneLoader is missing.");
+            return;
+        }
+
+        if (GameSessionContext.Instance == null)
+        {
+            view.SetStatus("Cannot start game. GameSessionContext is missing.");
+            return;
+        }
+
+        isMovingToGameScene = true;
+
+        try
+        {
+            // 게임 씬에는 RoomService 인스턴스를 넘기지 않고, roomId와 사용자 식별자만 넘깁니다.
+            // Map1에서는 이 RoomId로 Firestore room을 다시 읽어 finalMap을 로드합니다.
+            GameSessionContext.Instance.SetSession(
+                room.RoomId,
+                authService.UserId,
+                room.HostUserId);
+
+            view.SetStatus("Loading game scene...");
+            // 씬 이동 전에 로비 listener를 끊어 이전 Presenter가 추가 콜백을 받지 않게 합니다.
+            roomService.StopListening();
+
+            await sceneLoader.LoadSceneAsync(gameSceneName);
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"[LobbyPresenter] Failed to load game scene: {e}");
+            view.SetStatus("Failed to load game scene.");
+            isMovingToGameScene = false;
+        }
+    }
+
+    private async UniTask StartRelayClientAndMoveAsync(RoomState room)
+    {
+        if (isStartingRelayClient || isMovingToGameScene)
+        {
+            return;
+        }
+
+        if (room == null || string.IsNullOrWhiteSpace(room.RelayJoinCode))
+        {
+            view.SetStatus("Waiting for relay join code...");
+            return;
+        }
+
+        if (relayGameStartService == null)
+        {
+            view.SetStatus("Relay service is missing.");
+            return;
+        }
+
+        if (GameSessionContext.Instance == null)
+        {
+            view.SetStatus("Cannot start client. GameSessionContext is missing.");
+            return;
+        }
+
+        isStartingRelayClient = true;
+
+        try
+        {
+            GameSessionContext.Instance.SetSession(
+                room.RoomId,
+                authService.UserId,
+                room.HostUserId);
+
+            view.SetStatus("Joining relay...");
+
+            bool clientStarted = await relayGameStartService.StartClientWithRelayAsync(
+                room.RoomId,
+                authService.UserId,
+                room.RelayJoinCode);
+
+            if (!clientStarted)
+            {
+                view.SetStatus("Failed to join relay.");
+                isStartingRelayClient = false;
+                return;
+            }
+
+            await MoveToGameSceneAsync(room);
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"[LobbyPresenter] Failed to start relay client: {e}");
+            view.SetStatus("Failed to join relay.");
+            isStartingRelayClient = false;
+        }
     }
 
     private void OnPlayersChanged(IReadOnlyList<RoomPlayerState> players)

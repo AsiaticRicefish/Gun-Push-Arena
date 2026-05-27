@@ -16,8 +16,17 @@ public class LobbyUIController : MonoBehaviour
     // Inspector에서 MapValidationSettings.asset을 연결해야 합니다.
     [SerializeField] private MapValidationSettings validationSettings;
 
+    [Header("Scene")]
+    // 지금은 Map1을 게임 씬으로 사용합니다. 나중에 씬 이름을 바꾸면 Inspector나 여기 기본값을 수정하면 됩니다.
+    [SerializeField] private string gameSceneName = "Map1";
+
+    // Presenter가 씬 이동을 요청할 수 있도록 주입하는 씬 로더입니다.
+    // 인스펙터에 연결하지 않아도 Awake에서 자동으로 찾거나 추가합니다.
+    [SerializeField] private SceneLoader sceneLoader;
+
     // 로비 화면의 흐름과 상태 갱신을 담당합니다.
     private LobbyPresenter presenter;
+    private RelayGameStartService relayGameStartService;
 
     private void Awake()
     {
@@ -25,6 +34,23 @@ public class LobbyUIController : MonoBehaviour
         if (view == null)
         {
             view = GetComponent<LobbyUIView>();
+        }
+
+        if (sceneLoader == null)
+        {
+            sceneLoader = GetComponent<SceneLoader>();
+        }
+
+        if (sceneLoader == null)
+        {
+            // Lobby 오브젝트에 SceneLoader가 없으면 런타임에 붙여 Presenter 의존성을 만족시킵니다.
+            sceneLoader = gameObject.AddComponent<SceneLoader>();
+        }
+
+        if (GameSessionContext.Instance == null)
+        {
+            // LobbyScene에서 Map1로 넘어갈 때 RoomId를 보존해야 하므로 DontDestroyOnLoad 싱글톤으로 생성합니다.
+            new GameObject(nameof(GameSessionContext)).AddComponent<GameSessionContext>();
         }
     }
 
@@ -42,8 +68,24 @@ public class LobbyUIController : MonoBehaviour
             validationSettings,
             theme => new OllamaAiMapClient(theme));
 
+        UnityGameServicesInitializer unityGameServicesInitializer = new UnityGameServicesInitializer();
+        NetworkSessionRegistry networkSessionRegistry = new NetworkSessionRegistry();
+        NetworkConnectionApprovalHandler approvalHandler = new NetworkConnectionApprovalHandler(networkSessionRegistry);
+        relayGameStartService = new RelayGameStartService(
+            unityGameServicesInitializer,
+            networkSessionRegistry,
+            approvalHandler);
+
         // Presenter는 View, Service, MapService, Auth를 조합해서 로비 화면 흐름을 제어합니다.
-        presenter = new LobbyPresenter(view, roomService, roomMapService, AuthManager.Instance);
+        // 씬 이동에 필요한 SceneLoader와 게임 씬 이름도 Presenter에 주입합니다.
+        presenter = new LobbyPresenter(
+            view,
+            roomService,
+            roomMapService,
+            AuthManager.Instance,
+            sceneLoader,
+            gameSceneName,
+            relayGameStartService);
         presenter.Initialize();
     }
 

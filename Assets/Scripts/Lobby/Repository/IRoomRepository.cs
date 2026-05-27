@@ -24,6 +24,14 @@ public interface IRoomRepository
         string nickname,
         string colorHex);
 
+    // 게임 씬에서 roomId만 가지고 rooms/{roomId} 문서를 한 번 읽기 위해 사용합니다.
+    // finalMap 로드는 실시간 구독이 아니라 단건 조회로 충분하므로 별도 메서드로 분리합니다.
+    Task<RoomState> GetRoomAsync(string roomId);
+
+    // 게임 씬에서 SlotIndex 기준 플레이어 배치를 확인하기 위해 players 컬렉션을 한 번 읽습니다.
+    // 실제 플레이 중 위치 동기화는 Firestore가 아니라 Netcode가 담당합니다.
+    Task<IReadOnlyList<RoomPlayerState>> GetPlayersAsync(string roomId);
+
     // 플레이어가 방을 나갈 때 호출
     Task LeaveRoomAsync(
         string roomId,

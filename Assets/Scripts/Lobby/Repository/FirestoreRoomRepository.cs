@@ -161,6 +161,58 @@ public class FirestoreRoomRepository : IRoomRepository
         return true;
     }
 
+    public async Task<RoomState> GetRoomAsync(string roomId)
+    {
+        // 게임 씬은 GameSessionContext.RoomId를 통해 여기로 들어오므로 빈 값이면 바로 중단합니다.
+        if (string.IsNullOrWhiteSpace(roomId))
+        {
+            Debug.LogWarning("[Room] RoomId is empty.");
+            return null;
+        }
+
+        DocumentReference roomRef = firestore
+            .Collection(RoomsCollection)
+            .Document(roomId);
+
+        DocumentSnapshot snapshot = await roomRef.GetSnapshotAsync();
+
+        if (!snapshot.Exists)
+        {
+            // 방이 삭제되었거나 잘못된 roomId로 진입한 경우입니다.
+            Debug.LogWarning($"[Room] Room not found: {roomId}");
+            return null;
+        }
+
+        // Firestore의 rooms/{roomId} 문서를 RoomState로 변환해서 FinalMap까지 함께 돌려줍니다.
+        return snapshot.ConvertTo<RoomState>();
+    }
+
+    public async Task<IReadOnlyList<RoomPlayerState>> GetPlayersAsync(string roomId)
+    {
+        if (string.IsNullOrWhiteSpace(roomId))
+        {
+            Debug.LogWarning("[Room] RoomId is empty.");
+            return new List<RoomPlayerState>();
+        }
+
+        CollectionReference playersRef = firestore
+            .Collection(RoomsCollection)
+            .Document(roomId)
+            .Collection(PlayersCollection);
+
+        QuerySnapshot snapshot = await playersRef.GetSnapshotAsync();
+        List<RoomPlayerState> players = new List<RoomPlayerState>();
+
+        foreach (DocumentSnapshot document in snapshot.Documents)
+        {
+            players.Add(document.ConvertTo<RoomPlayerState>());
+        }
+
+        // SlotIndex 0 -> Player1Spawn, SlotIndex 1 -> Player2Spawn 매핑이 안정적으로 되도록 정렬합니다.
+        players.Sort((a, b) => a.SlotIndex.CompareTo(b.SlotIndex));
+        return players;
+    }
+
     public async Task LeaveRoomAsync(string roomId, string userId)
     {
         // 나가는 유저의 player 문서를 삭제하고, 방 상태도 함께 갱신합니다.
