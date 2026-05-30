@@ -85,11 +85,6 @@ public static class AiThemeMapBuilderUtility
         EnsureStandable(map, map.player2Spawn.x, map.player2Spawn.y);
         EnsureStandable(map, map.player1Spawn.x + 1, map.player1Spawn.y);
         EnsureStandable(map, map.player2Spawn.x - 1, map.player2Spawn.y);
-
-        if (map.player1Spawn.y == map.player2Spawn.y)
-        {
-            EnsurePath(map, map.player1Spawn.x, map.player2Spawn.x, map.player1Spawn.y);
-        }
     }
 
     public static void ApplyDanger(AiMapLayoutDto map, AiMapIntentDto intent)

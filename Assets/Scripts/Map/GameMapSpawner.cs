@@ -1,37 +1,28 @@
 using UnityEngine;
 
-/// <summary>
-/// 게임 플레이 씬에서 사용하는 실제 맵 스포너입니다.
-/// 로비 미리보기용 MapPreviewSpawner와 분리해서, 게임용 시각 요소와 충돌체 생성,
-/// 플레이어 스폰 위치 계산을 담당합니다.
-/// </summary>
 public class GameMapSpawner : MonoBehaviour
 {
+    private static PhysicsMaterial2D noFrictionMaterial;
+
     [Header("Tile Visuals")]
-    // MapLayoutData의 한 칸을 Unity 월드 좌표에서 몇 unit으로 표현할지 결정합니다.
     [SerializeField] private float tileSize = 1f;
     [SerializeField] private Color floorColor = new Color(0.35f, 0.35f, 0.35f);
     [SerializeField] private Color wallColor = new Color(0.1f, 0.1f, 0.1f);
     [SerializeField] private Color player1SpawnColor = Color.cyan;
     [SerializeField] private Color player2SpawnColor = Color.magenta;
+    [SerializeField] private float platformThickness = 0.35f;
 
     [Header("Physics")]
-    // Wall 타일에 BoxCollider2D를 붙여 실제 플레이 중 통과하지 못하게 합니다.
     [SerializeField] private bool createWallColliders = true;
+    [SerializeField] private bool createFloorColliders = true;
 
-    // 좌상단 기준 타일 좌표를 맵 중앙 기준 월드 좌표로 옮기기 위한 보정값입니다.
     private Vector2 mapOffset;
-
-    // 런타임에 흰색 1픽셀 스프라이트를 한 번만 만들어 모든 타일 렌더링에 재사용합니다.
     private Sprite squareSprite;
 
-    // 이후 NetworkObject 플레이어 스폰에서 SlotIndex 0/1에 맞는 위치로 매핑합니다.
     public Vector3 Player1SpawnWorldPosition { get; private set; }
     public Vector3 Player2SpawnWorldPosition { get; private set; }
+    public float DeathY { get; private set; }
 
-    /// <summary>
-    /// 검증과 파싱이 끝난 MapLayoutData를 실제 GameObject 타일들로 생성합니다.
-    /// </summary>
     public void Spawn(MapLayoutData layout)
     {
         if (layout == null)
@@ -41,15 +32,13 @@ public class GameMapSpawner : MonoBehaviour
         }
 
         ClearChildren();
-
-        // 맵 중심이 월드 원점 근처에 오도록 좌표를 보정합니다.
         mapOffset = new Vector2((layout.Width - 1) * 0.5f, (layout.Height - 1) * 0.5f);
+        DeathY = GetMapBottomWorldY() - tileSize * 3f;
 
         SpawnTiles(layout);
 
-        // 스폰 타일 좌표를 플레이어 생성에 바로 사용할 수 있는 월드 좌표로 저장합니다.
-        Player1SpawnWorldPosition = CellToWorld(layout.Player1Spawn, -0.2f);
-        Player2SpawnWorldPosition = CellToWorld(layout.Player2Spawn, -0.2f);
+        Player1SpawnWorldPosition = GetPlayerSpawnWorldPosition(layout.Player1Spawn);
+        Player2SpawnWorldPosition = GetPlayerSpawnWorldPosition(layout.Player2Spawn);
 
         SpawnMarker(layout.Player1Spawn, player1SpawnColor, "Player1Spawn");
         SpawnMarker(layout.Player2Spawn, player2SpawnColor, "Player2Spawn");
@@ -57,9 +46,6 @@ public class GameMapSpawner : MonoBehaviour
         Debug.Log($"[GameMapSpawner] Map spawned. Size: {layout.Width}x{layout.Height}, P1: {Player1SpawnWorldPosition}, P2: {Player2SpawnWorldPosition}");
     }
 
-    /// <summary>
-    /// rooms/{roomId}/players의 SlotIndex를 기준으로 플레이어 스폰 위치를 반환합니다.
-    /// </summary>
     public Vector3 GetSpawnWorldPosition(int slotIndex)
     {
         return slotIndex == 0
@@ -69,42 +55,121 @@ public class GameMapSpawner : MonoBehaviour
 
     private void SpawnTiles(MapLayoutData layout)
     {
-        // MapLayoutData는 1차원 타일 배열이지만, 스폰은 x/y 격자 순회로 처리합니다.
+        SpawnFloorPlatforms(layout);
+        SpawnWalls(layout);
+    }
+
+    private void SpawnFloorPlatforms(MapLayoutData layout)
+    {
+        for (int y = 0; y < layout.Height; y++)
+        {
+            int x = 0;
+            while (x < layout.Width)
+            {
+                if (layout.GetTile(x, y) != MapTileType.Floor)
+                {
+                    x++;
+                    continue;
+                }
+
+                int startX = x;
+                while (x < layout.Width && layout.GetTile(x, y) == MapTileType.Floor)
+                {
+                    x++;
+                }
+
+                SpawnFloorPlatform(startX, x - 1, y);
+            }
+        }
+    }
+
+    private void SpawnWalls(MapLayoutData layout)
+    {
         for (int y = 0; y < layout.Height; y++)
         {
             for (int x = 0; x < layout.Width; x++)
             {
-                MapTileType tileType = layout.GetTile(x, y);
-
-                if (tileType == MapTileType.Empty)
+                if (layout.GetTile(x, y) != MapTileType.Wall)
                 {
-                    // Empty는 빈 공간이므로 렌더러와 콜라이더를 만들지 않습니다.
                     continue;
                 }
 
-                Color color = tileType == MapTileType.Wall ? wallColor : floorColor;
-                float zPosition = tileType == MapTileType.Wall ? -0.1f : 0f;
-                GameObject tile = SpawnSquare(
-                    new Vector2Int(x, y),
-                    color,
-                    $"{tileType}_{x}_{y}",
-                    1f,
-                    zPosition);
+                GameObject wall = SpawnRectangle(
+                    CellToWorld(new Vector2Int(x, y), -0.1f),
+                    Vector2.one * tileSize,
+                    wallColor,
+                    $"Wall_{x}_{y}");
 
-                if (tileType == MapTileType.Wall && createWallColliders)
+                if (createWallColliders)
                 {
-                    // Wall만 물리 충돌 대상입니다. Floor는 이동 가능한 바닥으로 둡니다.
-                    BoxCollider2D collider = tile.AddComponent<BoxCollider2D>();
-                    collider.size = Vector2.one;
+                    AddBoxCollider(wall, Vector2.one);
                 }
             }
         }
     }
 
+    private void SpawnFloorPlatform(int startX, int endX, int y)
+    {
+        int tileCount = endX - startX + 1;
+        float width = tileCount * tileSize;
+        float height = tileSize * platformThickness;
+        float centerX = ((startX + endX) * 0.5f - mapOffset.x) * tileSize;
+        float centerY = (y - mapOffset.y) * tileSize;
+
+        GameObject platform = SpawnRectangle(
+            new Vector3(centerX, centerY, 0f),
+            new Vector2(width, height),
+            floorColor,
+            $"Platform_{startX}_{endX}_{y}");
+
+        if (createFloorColliders)
+        {
+            AddTopEdgeCollider(platform);
+        }
+    }
+
+    private GameObject SpawnRectangle(Vector3 position, Vector2 size, Color color, string objectName)
+    {
+        GameObject rectangle = new GameObject(objectName);
+        rectangle.transform.SetParent(transform);
+        rectangle.transform.position = position;
+        rectangle.transform.localScale = new Vector3(size.x, size.y, 1f);
+
+        SpriteRenderer spriteRenderer = rectangle.AddComponent<SpriteRenderer>();
+        spriteRenderer.sprite = GetSquareSprite();
+        spriteRenderer.color = color;
+
+        return rectangle;
+    }
+
+    private void AddBoxCollider(GameObject target, Vector2 size)
+    {
+        BoxCollider2D collider = target.AddComponent<BoxCollider2D>();
+        collider.size = size;
+        collider.sharedMaterial = GetNoFrictionMaterial();
+    }
+
+    private void AddTopEdgeCollider(GameObject target)
+    {
+        EdgeCollider2D collider = target.AddComponent<EdgeCollider2D>();
+        collider.points = new[]
+        {
+            new Vector2(-0.5f, 0.5f),
+            new Vector2(0.5f, 0.5f)
+        };
+        collider.edgeRadius = 0f;
+        collider.sharedMaterial = GetNoFrictionMaterial();
+    }
+
+    private Vector3 GetPlayerSpawnWorldPosition(Vector2Int spawnCell)
+    {
+        Vector3 cellPosition = CellToWorld(spawnCell, -0.2f);
+        cellPosition.y += tileSize * (0.5f + platformThickness);
+        return cellPosition;
+    }
+
     private void SpawnMarker(Vector2Int cell, Color color, string objectName)
     {
-        // 현재는 디버깅을 위해 스폰 위치를 작은 색상 마커로 표시합니다.
-        // 나중에 실제 플레이어 스폰이 안정되면 인스펙터 옵션으로 숨길 수 있습니다.
         SpawnSquare(cell, color, objectName, 0.55f, -0.2f);
     }
 
@@ -134,7 +199,6 @@ public class GameMapSpawner : MonoBehaviour
             return squareSprite;
         }
 
-        // 별도 아트 리소스 없이도 프로토타입 맵을 볼 수 있도록 Unity 기본 흰 텍스처를 스프라이트로 변환합니다.
         Texture2D texture = Texture2D.whiteTexture;
         squareSprite = Sprite.Create(
             texture,
@@ -147,19 +211,38 @@ public class GameMapSpawner : MonoBehaviour
 
     private Vector3 CellToWorld(Vector2Int cell, float zPosition)
     {
-        // 타일 좌표계는 (0,0)부터 시작하지만, 월드에서는 맵 중심이 원점에 오도록 offset을 뺍니다.
         float x = (cell.x - mapOffset.x) * tileSize;
         float y = (cell.y - mapOffset.y) * tileSize;
 
         return new Vector3(x, y, zPosition);
     }
 
+    private float GetMapBottomWorldY()
+    {
+        return -mapOffset.y * tileSize;
+    }
+
     private void ClearChildren()
     {
-        // 같은 spawner를 재사용해 맵을 다시 로드할 수 있도록 이전 타일들을 제거합니다.
         for (int i = transform.childCount - 1; i >= 0; i--)
         {
             Destroy(transform.GetChild(i).gameObject);
         }
+    }
+
+    private static PhysicsMaterial2D GetNoFrictionMaterial()
+    {
+        if (noFrictionMaterial != null)
+        {
+            return noFrictionMaterial;
+        }
+
+        noFrictionMaterial = new PhysicsMaterial2D("NoFriction")
+        {
+            friction = 0f,
+            bounciness = 0f
+        };
+
+        return noFrictionMaterial;
     }
 }

@@ -12,30 +12,38 @@ public sealed class IslandThemeMapBuilder : IAiThemeMapBuilder
 
         int centerX = map.width / 2;
         int centerY = map.height / 2;
-        int centerOffsetY = random.Next(-1, 2);
+        int highY = Mathf.Clamp(centerY + 3 + random.Next(-1, 2), 1, map.height - 2);
+        int lowY = Mathf.Clamp(centerY - 3, 1, map.height - 2);
 
-        AiThemeMapBuilderUtility.FillRect(map, 2, centerY - 1, 5, centerY + 1, 1);
-        AiThemeMapBuilderUtility.FillRect(map, map.width - 6, centerY - 1, map.width - 3, centerY + 1, 1);
-        AiThemeMapBuilderUtility.FillRect(map, centerX - 2, centerY - 2 + centerOffsetY, centerX + 2, centerY + centerOffsetY, 1);
-        AiThemeMapBuilderUtility.FillRect(map, centerX - 1, centerY + 2 - centerOffsetY, centerX + 1, centerY + 2 - centerOffsetY, 1);
+        AddPlatform(map, 2, 5, centerY);
+        AddPlatform(map, map.width - 6, map.width - 3, centerY);
+        AddPlatform(map, centerX - 2, centerX + 2, highY);
+        AddPlatform(map, centerX - 2, centerX + 2, lowY);
+        AddPlatform(map, 2, 6, lowY);
+        AddPlatform(map, map.width - 7, map.width - 3, lowY);
+        AddPlatform(map, centerX - 1, centerX + 1, Mathf.Clamp(centerY + 1, 1, map.height - 2));
 
-        AiThemeMapBuilderUtility.FillRect(map, 5, centerY + random.Next(-1, 1), centerX - 2, centerY, 1);
-        AiThemeMapBuilderUtility.FillRect(map, centerX + 2, centerY, map.width - 6, centerY + random.Next(0, 2), 1);
-
-        if (AiThemeMapBuilderUtility.Normalize(intent?.dangerLevel, "medium") == "high")
+        if (AiThemeMapBuilderUtility.IsLarge(intent))
         {
-            AiThemeMapBuilderUtility.SetTile(map, centerX, centerY, 0);
-            AiThemeMapBuilderUtility.SetTile(map, centerX - 1, centerY - 1, 0);
-            AiThemeMapBuilderUtility.SetTile(map, centerX + 1, centerY - 1, 0);
+            AddPlatform(map, centerX - 3, centerX + 3, Mathf.Clamp(centerY - 1, 1, map.height - 2));
         }
 
         map.player1Spawn = new AiVector2IntDto { x = 3, y = centerY };
         map.player2Spawn = new AiVector2IntDto { x = map.width - 4, y = centerY };
 
-        AiThemeMapBuilderUtility.ApplyDanger(map, intent);
-        AiThemeMapBuilderUtility.ApplyWalls(map, intent);
         AiThemeMapBuilderUtility.EnsureSpawnRules(map);
 
         return map;
+    }
+
+    private void AddPlatform(AiMapLayoutDto map, int startX, int endX, int y)
+    {
+        AiThemeMapBuilderUtility.FillRect(
+            map,
+            Mathf.Clamp(startX, 1, map.width - 2),
+            Mathf.Clamp(y, 1, map.height - 2),
+            Mathf.Clamp(endX, 1, map.width - 2),
+            Mathf.Clamp(y, 1, map.height - 2),
+            1);
     }
 }

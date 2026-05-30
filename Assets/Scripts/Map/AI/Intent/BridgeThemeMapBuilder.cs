@@ -11,46 +11,40 @@ public sealed class BridgeThemeMapBuilder : IAiThemeMapBuilder
         AiThemeMapBuilderUtility.Fill(map, 0);
 
         int centerY = map.height / 2;
-        int leftCenterX = 3;
-        int rightCenterX = map.width - 4;
-        int islandHalfWidth = (AiThemeMapBuilderUtility.IsLarge(intent) ? 3 : 2) + random.Next(0, 2);
-        int islandHalfHeight = AiThemeMapBuilderUtility.IsLarge(intent) || random.Next(0, 3) == 0 ? 2 : 1;
+        int upperY = Mathf.Clamp(centerY + 2, 1, map.height - 2);
+        int lowerY = Mathf.Clamp(centerY - 2, 1, map.height - 2);
+        int centerX = map.width / 2;
 
-        AiThemeMapBuilderUtility.FillRect(map, leftCenterX - islandHalfWidth, centerY - islandHalfHeight, leftCenterX + islandHalfWidth, centerY + islandHalfHeight, 1);
-        AiThemeMapBuilderUtility.FillRect(map, rightCenterX - islandHalfWidth, centerY - islandHalfHeight, rightCenterX + islandHalfWidth, centerY + islandHalfHeight, 1);
+        AddPlatform(map, 1, 5, centerY);
+        AddPlatform(map, map.width - 6, map.width - 2, centerY);
+        AddPlatform(map, centerX - 1, centerX + 1, centerY + random.Next(-1, 2));
 
-        int bridgeCount = Mathf.Clamp(intent?.bridgeCount ?? 1, 1, 3);
-        int[] offsets = GetBridgeOffsets(bridgeCount);
+        AddPlatform(map, 3, 7, upperY);
+        AddPlatform(map, map.width - 8, map.width - 4, upperY);
+        AddPlatform(map, centerX - 3, centerX + 3, lowerY);
 
-        for (int i = 0; i < offsets.Length; i++)
+        if (AiThemeMapBuilderUtility.IsLarge(intent))
         {
-            int jitter = random.Next(0, 4) == 0 ? random.Next(-1, 2) : 0;
-            int y = Mathf.Clamp(centerY + offsets[i] + jitter, 1, map.height - 2);
-            AiThemeMapBuilderUtility.FillRect(map, leftCenterX + islandHalfWidth, y, rightCenterX - islandHalfWidth, y, 1);
+            AddPlatform(map, centerX - 2, centerX + 2, Mathf.Clamp(centerY + 1, 1, map.height - 2));
         }
 
-        map.player1Spawn = new AiVector2IntDto { x = leftCenterX, y = centerY };
-        map.player2Spawn = new AiVector2IntDto { x = rightCenterX, y = centerY };
+        map.player1Spawn = new AiVector2IntDto { x = 3, y = centerY };
+        map.player2Spawn = new AiVector2IntDto { x = map.width - 4, y = centerY };
 
-        AiThemeMapBuilderUtility.ApplyDanger(map, intent);
         AiThemeMapBuilderUtility.ApplyWalls(map, intent);
         AiThemeMapBuilderUtility.EnsureSpawnRules(map);
 
         return map;
     }
 
-    private int[] GetBridgeOffsets(int bridgeCount)
+    private void AddPlatform(AiMapLayoutDto map, int startX, int endX, int y)
     {
-        if (bridgeCount >= 3)
-        {
-            return new[] { -2, 0, 2 };
-        }
-
-        if (bridgeCount == 2)
-        {
-            return new[] { -1, 1 };
-        }
-
-        return new[] { 0 };
+        AiThemeMapBuilderUtility.FillRect(
+            map,
+            Mathf.Clamp(startX, 1, map.width - 2),
+            Mathf.Clamp(y, 1, map.height - 2),
+            Mathf.Clamp(endX, 1, map.width - 2),
+            Mathf.Clamp(y, 1, map.height - 2),
+            1);
     }
 }

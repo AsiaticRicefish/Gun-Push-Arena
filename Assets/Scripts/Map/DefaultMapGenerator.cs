@@ -12,13 +12,12 @@ public class DefaultMapGenerator : IMapGenerator
             Width = DefaultWidth,
             Height = DefaultHeight,
             Tiles = new MapTileType[DefaultWidth * DefaultHeight],
-            Player1Spawn = new Vector2Int(3, DefaultHeight / 2),
-            Player2Spawn = new Vector2Int(DefaultWidth - 4, DefaultHeight / 2)
+            Player1Spawn = new Vector2Int(3, 3),
+            Player2Spawn = new Vector2Int(DefaultWidth - 4, 3)
         };
 
         FillEmpty(layout);
-        CreateDefaultFloor(layout);
-        CreateDefaultFallHoles(layout);
+        CreatePlatformLayout(layout);
         CreateDefaultSpawnHeadroom(layout);
         EnsureSpawnFloor(layout, layout.Player1Spawn);
         EnsureSpawnFloor(layout, layout.Player2Spawn);
@@ -34,34 +33,12 @@ public class DefaultMapGenerator : IMapGenerator
         }
     }
 
-    private void CreateDefaultFloor(MapLayoutData layout)
+    private void CreatePlatformLayout(MapLayoutData layout)
     {
-        int centerX = layout.Width / 2;
-        int centerY = layout.Height / 2;
-
-        for (int y = centerY - 2; y <= centerY + 2; y++)
-        {
-            for (int x = centerX - 5; x <= centerX + 5; x++)
-            {
-                SetTile(layout, x, y, MapTileType.Floor);
-            }
-        }
-
-        for (int x = layout.Player1Spawn.x; x <= layout.Player2Spawn.x; x++)
-        {
-            SetTile(layout, x, centerY, MapTileType.Floor);
-        }
-    }
-
-    private void CreateDefaultFallHoles(MapLayoutData layout)
-    {
-        int centerX = layout.Width / 2;
-        int centerY = layout.Height / 2;
-
-        SetTile(layout, centerX, centerY + 1, MapTileType.Empty);
-        SetTile(layout, centerX, centerY - 1, MapTileType.Empty);
-        SetTile(layout, centerX - 2, centerY + 1, MapTileType.Empty);
-        SetTile(layout, centerX + 2, centerY - 1, MapTileType.Empty);
+        AddHorizontalPlatform(layout, 2, 14, 3);
+        AddHorizontalPlatform(layout, 2, 7, 5);
+        AddHorizontalPlatform(layout, 9, 14, 5);
+        AddHorizontalPlatform(layout, 6, 10, 7);
     }
 
     private void CreateDefaultSpawnHeadroom(MapLayoutData layout)
@@ -75,6 +52,14 @@ public class DefaultMapGenerator : IMapGenerator
     private void EnsureSpawnFloor(MapLayoutData layout, Vector2Int spawn)
     {
         SetTile(layout, spawn.x, spawn.y, MapTileType.Floor);
+    }
+
+    private void AddHorizontalPlatform(MapLayoutData layout, int startX, int endX, int y)
+    {
+        for (int x = startX; x <= endX; x++)
+        {
+            SetTile(layout, x, y, MapTileType.Floor);
+        }
     }
 
     private void SetTile(MapLayoutData layout, int x, int y, MapTileType tileType)

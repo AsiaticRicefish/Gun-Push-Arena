@@ -108,9 +108,9 @@ public class MapLayoutValidator
             return false;
         }
 
-        if (settings.RequireSpawnPath && !SpawnsConnected(layout))
+        if (CountPlatformRuns(layout) < 4)
         {
-            errorMessage = "플레이어 스폰 지점이 바닥을 따라 연결되어 있지 않습니다.";
+            errorMessage = "플랫폼 수가 부족합니다.";
             return false;
         }
 
@@ -313,6 +313,33 @@ public class MapLayoutValidator
             if (layout.Tiles[i] == MapTileType.Wall)
             {
                 count++;
+            }
+        }
+
+        return count;
+    }
+
+    private int CountPlatformRuns(MapLayoutData layout)
+    {
+        int count = 0;
+
+        for (int y = 0; y < layout.Height; y++)
+        {
+            bool inRun = false;
+
+            for (int x = 0; x < layout.Width; x++)
+            {
+                bool isFloor = layout.GetTile(x, y) == MapTileType.Floor;
+
+                if (isFloor && !inRun)
+                {
+                    count++;
+                    inRun = true;
+                }
+                else if (!isFloor)
+                {
+                    inRun = false;
+                }
             }
         }
 
