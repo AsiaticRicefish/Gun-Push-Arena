@@ -19,6 +19,7 @@ public class GameSceneBootstrap : MonoBehaviour
     [SerializeField] private GameMapSpawner mapSpawner;
     [SerializeField] private GamePlayerPreviewSpawner playerPreviewSpawner;
     [SerializeField] private NetworkPlayerSpawner networkPlayerSpawner;
+    [SerializeField] private GameRoundManager gameRoundManager;
 
     // Start가 여러 경로로 호출되더라도 Firestore 로드를 한 번만 진행하기 위한 방어 플래그입니다.
     private bool isLoading;
@@ -108,6 +109,8 @@ public class GameSceneBootstrap : MonoBehaviour
                 players,
                 spawner,
                 RelayGameStartService.ActiveSessionRegistry);
+
+            GetOrCreateGameRoundManager().StartWatching(players.Count);
         }
         else if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening)
         {
@@ -176,6 +179,24 @@ public class GameSceneBootstrap : MonoBehaviour
         GameObject playerRoot = new GameObject("NetworkPlayerSpawner");
         networkPlayerSpawner = playerRoot.AddComponent<NetworkPlayerSpawner>();
         return networkPlayerSpawner;
+    }
+
+    private GameRoundManager GetOrCreateGameRoundManager()
+    {
+        if (gameRoundManager != null)
+        {
+            return gameRoundManager;
+        }
+
+        gameRoundManager = FindFirstObjectByType<GameRoundManager>();
+        if (gameRoundManager != null)
+        {
+            return gameRoundManager;
+        }
+
+        GameObject roundRoot = new GameObject("GameRoundManager");
+        gameRoundManager = roundRoot.AddComponent<GameRoundManager>();
+        return gameRoundManager;
     }
 
     private void DisablePreviewSpawner()

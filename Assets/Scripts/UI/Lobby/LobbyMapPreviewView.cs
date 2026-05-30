@@ -16,6 +16,7 @@ public class LobbyMapPreviewView : MonoBehaviour
     [Header("Layout")]
     [SerializeField] private float tileGap = 1f;
     [SerializeField] private float spawnMarkerScale = 0.55f;
+    [SerializeField] private float platformThickness = 0.35f;
 
     private RectTransform rectTransform;
 
@@ -45,21 +46,8 @@ public class LobbyMapPreviewView : MonoBehaviour
         float mapPixelWidth = cellSize * map.width;
         float mapPixelHeight = cellSize * map.height;
 
-        for (int y = 0; y < map.height; y++)
-        {
-            for (int x = 0; x < map.width; x++)
-            {
-                int tile = map.tiles[y * map.width + x];
-
-                if (tile == (int)MapTileType.Empty)
-                {
-                    continue;
-                }
-
-                Color color = tile == (int)MapTileType.Wall ? wallColor : floorColor;
-                CreateCell($"Tile_{x}_{y}", x, y, cellSize, mapPixelWidth, mapPixelHeight, color, 1f);
-            }
-        }
+        CreateFloorPlatforms(map, cellSize, mapPixelWidth, mapPixelHeight);
+        CreateWalls(map, cellSize, mapPixelWidth, mapPixelHeight);
 
         if (map.player1Spawn != null)
         {
@@ -70,6 +58,75 @@ public class LobbyMapPreviewView : MonoBehaviour
         {
             CreateCell("Player2Spawn", map.player2Spawn.x, map.player2Spawn.y, cellSize, mapPixelWidth, mapPixelHeight, player2SpawnColor, spawnMarkerScale);
         }
+    }
+
+    private void CreateFloorPlatforms(
+        AiMapLayoutDto map,
+        float cellSize,
+        float mapPixelWidth,
+        float mapPixelHeight)
+    {
+        for (int y = 0; y < map.height; y++)
+        {
+            int x = 0;
+            while (x < map.width)
+            {
+                if (GetTile(map, x, y) != (int)MapTileType.Floor)
+                {
+                    x++;
+                    continue;
+                }
+
+                int startX = x;
+                while (x < map.width && GetTile(map, x, y) == (int)MapTileType.Floor)
+                {
+                    x++;
+                }
+
+                CreatePlatform($"Platform_{startX}_{x - 1}_{y}", startX, x - 1, y, cellSize, mapPixelWidth, mapPixelHeight);
+            }
+        }
+    }
+
+    private void CreateWalls(
+        AiMapLayoutDto map,
+        float cellSize,
+        float mapPixelWidth,
+        float mapPixelHeight)
+    {
+        for (int y = 0; y < map.height; y++)
+        {
+            for (int x = 0; x < map.width; x++)
+            {
+                if (GetTile(map, x, y) == (int)MapTileType.Wall)
+                {
+                    CreateCell($"Wall_{x}_{y}", x, y, cellSize, mapPixelWidth, mapPixelHeight, wallColor, 1f);
+                }
+            }
+        }
+    }
+
+    private int GetTile(AiMapLayoutDto map, int x, int y)
+    {
+        return map.tiles[y * map.width + x];
+    }
+
+    private void CreatePlatform(
+        string objectName,
+        int startX,
+        int endX,
+        int y,
+        float cellSize,
+        float mapPixelWidth,
+        float mapPixelHeight)
+    {
+        int tileCount = endX - startX + 1;
+        float width = Mathf.Max(1f, cellSize * tileCount - tileGap);
+        float height = Mathf.Max(1f, (cellSize - tileGap) * platformThickness);
+        float centerX = ((startX + endX + 1) * 0.5f) * cellSize - mapPixelWidth * 0.5f;
+        float centerY = (y + 0.5f) * cellSize - mapPixelHeight * 0.5f;
+
+        CreateRect(objectName, new Vector2(centerX, centerY), new Vector2(width, height), floorColor);
     }
 
     public void Clear()
@@ -104,6 +161,23 @@ public class LobbyMapPreviewView : MonoBehaviour
         cellRect.anchoredPosition = new Vector2(anchoredX, anchoredY);
 
         Image image = cell.GetComponent<Image>();
+        image.color = color;
+        image.raycastTarget = false;
+    }
+
+    private void CreateRect(string objectName, Vector2 anchoredPosition, Vector2 size, Color color)
+    {
+        GameObject rectObject = new GameObject(objectName, typeof(RectTransform), typeof(Image));
+        rectObject.transform.SetParent(transform, false);
+
+        RectTransform cellRect = rectObject.GetComponent<RectTransform>();
+        cellRect.anchorMin = new Vector2(0.5f, 0.5f);
+        cellRect.anchorMax = new Vector2(0.5f, 0.5f);
+        cellRect.pivot = new Vector2(0.5f, 0.5f);
+        cellRect.sizeDelta = size;
+        cellRect.anchoredPosition = anchoredPosition;
+
+        Image image = rectObject.GetComponent<Image>();
         image.color = color;
         image.raycastTarget = false;
     }
