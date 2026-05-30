@@ -84,7 +84,10 @@ public sealed class NetworkProjectile : NetworkBehaviour
         PlayerController hitPlayer = other.GetComponentInParent<PlayerController>();
         if (hitPlayer != null)
         {
-            hitPlayer.ApplyProjectileHit(direction);
+            if (!hitPlayer.ApplyProjectileHit(direction))
+            {
+                return;
+            }
         }
 
         Despawn();

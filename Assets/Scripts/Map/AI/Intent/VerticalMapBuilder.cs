@@ -1,8 +1,8 @@
 using UnityEngine;
 
-public sealed class WarehouseThemeMapBuilder : IAiThemeMapBuilder
+public sealed class VerticalMapBuilder : IAiThemeMapBuilder
 {
-    public string Theme => "warehouse";
+    public string Theme => "vertical";
 
     public AiMapLayoutDto Build(AiMapIntentDto intent, AiMapGenerateRequest request)
     {
@@ -25,7 +25,7 @@ public sealed class WarehouseThemeMapBuilder : IAiThemeMapBuilder
         map.player1Spawn = new AiVector2IntDto { x = Mathf.Max(2, centerX - halfWidth + 1), y = centerY };
         map.player2Spawn = new AiVector2IntDto { x = Mathf.Min(map.width - 3, centerX + halfWidth - 1), y = centerY };
 
-        PlaceWarehouseCover(map, centerX, centerY, random);
+        PlaceCenterCover(map, centerX, centerY, random);
         AiThemeMapBuilderUtility.EnsureSpawnRules(map);
 
         return map;
@@ -42,7 +42,7 @@ public sealed class WarehouseThemeMapBuilder : IAiThemeMapBuilder
             1);
     }
 
-    private void PlaceWarehouseCover(AiMapLayoutDto map, int centerX, int centerY, System.Random random)
+    private void PlaceCenterCover(AiMapLayoutDto map, int centerX, int centerY, System.Random random)
     {
         AiThemeMapBuilderUtility.SetTile(map, centerX - 4 + random.Next(-1, 2), centerY, 2);
         AiThemeMapBuilderUtility.SetTile(map, centerX, centerY, 2);

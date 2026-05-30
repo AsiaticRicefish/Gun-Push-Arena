@@ -7,5 +7,5 @@ public interface IAuthService
     UserData CurrentUserData { get; }
 
     Task<bool> GuestLoginAsync();
-    Task<bool> UpdateNicknameAsync(string nickname);
+    Task<NicknameUpdateResult> UpdateNicknameAsync(string nickname);
 }

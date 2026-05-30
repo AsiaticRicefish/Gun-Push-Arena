@@ -42,11 +42,6 @@ public interface IRoomRepository
         string roomId,
         AiMapTheme theme);
 
-    // AI 옵션 힌트 변경
-    Task UpdateAiStyleHintAsync(
-        string roomId,
-        string aiStyleHint);
-
     // 참가자의 ready 상태 변경
     Task UpdateReadyAsync(
         string roomId,

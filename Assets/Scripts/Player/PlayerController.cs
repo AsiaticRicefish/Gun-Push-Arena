@@ -9,6 +9,7 @@ public class PlayerController : NetworkBehaviour
     private const int DefaultMaxJumpCount = 2;
     private const float MinimumJumpForce = 12f;
     private const float MaximumGravityScale = 2.5f;
+    private const float DefaultRespawnInvulnerabilitySeconds = 3f;
 
     private static PhysicsMaterial2D noFrictionMaterial;
 
@@ -21,6 +22,8 @@ public class PlayerController : NetworkBehaviour
     private int remainingJumpCount;
     private Vector3 respawnPosition;
     private float deathY = -20f;
+    private float invulnerableUntil;
+    private Color currentPlayerColor = Color.white;
 
     // 로그인된 사용자의 UID를 서버로 전송하기 위해 IAuthService 인터페이스를 사용하여 AuthManager에 접근합니다.
     // 이를 통해 PlayerController가 AuthManager에 직접 의존하지 않고도 로그인 정보를 사용할 수 있도록 합니다.
@@ -41,6 +44,7 @@ public class PlayerController : NetworkBehaviour
     [SerializeField] private float fireCooldown = 0.25f;
     [SerializeField] private Vector2 hitKnockback = new Vector2(8f, 4f);
     [SerializeField] private float knockbackControlLock = 0.18f;
+    [SerializeField] private float respawnInvulnerabilitySeconds = DefaultRespawnInvulnerabilitySeconds;
 
     [Header("Visual")]
     [SerializeField] private Renderer playerRenderer;
@@ -59,6 +63,11 @@ public class PlayerController : NetworkBehaviour
 
     public NetworkVariable<int> Lives = new NetworkVariable<int>(
         DefaultLives,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Server);
+
+    public NetworkVariable<bool> IsInvulnerable = new NetworkVariable<bool>(
+        false,
         NetworkVariableReadPermission.Everyone,
         NetworkVariableWritePermission.Server);
 
@@ -106,6 +115,7 @@ public class PlayerController : NetworkBehaviour
         this.deathY = deathY;
         Lives.Value = DefaultLives;
         remainingJumpCount = maxJumpCount;
+        BeginInvulnerability();
     }
 
     // 여기서 네트워크 스폰 시 초기화 작업을 수행할 수 있습니다(Netcode 기준 진입점)
@@ -114,6 +124,7 @@ public class PlayerController : NetworkBehaviour
         Debug.Log($"[PlayerController] Spawned. IsOwner: {IsOwner}");
 
         PlayerData.OnValueChanged += OnPlayerDataChanged;
+        IsInvulnerable.OnValueChanged += OnInvulnerabilityChanged;
 
         if (IsOwner)
         {
@@ -132,6 +143,7 @@ public class PlayerController : NetworkBehaviour
             ApplyPlayerVisual(PlayerData.Value);
         }
 
+        UpdatePlayerVisualState();
     }
 
     private IEnumerator RegisterUidReady()
@@ -165,6 +177,7 @@ public class PlayerController : NetworkBehaviour
     public override void OnNetworkDespawn()
     {
         PlayerData.OnValueChanged -= OnPlayerDataChanged;
+        IsInvulnerable.OnValueChanged -= OnInvulnerabilityChanged;
         input.Disable();
     }
 
@@ -206,6 +219,8 @@ public class PlayerController : NetworkBehaviour
             HandleFallOut();
             return;
         }
+
+        UpdateInvulnerabilityState();
 
         bool isGrounded = IsGrounded();
         if (isGrounded && rb.linearVelocity.y <= 0.01f)
@@ -302,6 +317,7 @@ public class PlayerController : NetworkBehaviour
             return;
         }
 
+        IsInvulnerable.Value = false;
         rb.linearVelocity = Vector2.zero;
         Debug.Log("[PlayerController] Player eliminated.");
     }
@@ -313,13 +329,19 @@ public class PlayerController : NetworkBehaviour
         transform.position = respawnPosition;
         remainingJumpCount = maxJumpCount;
         knockbackControlLockUntil = 0f;
+        BeginInvulnerability();
     }
 
-    public void ApplyProjectileHit(Vector2 hitDirection)
+    public bool ApplyProjectileHit(Vector2 hitDirection)
     {
         if (!IsServer || rb == null || Lives.Value <= 0)
         {
-            return;
+            return false;
+        }
+
+        if (IsInvulnerable.Value)
+        {
+            return false;
         }
 
         Vector2 normalizedDirection = hitDirection.sqrMagnitude > 0f ? hitDirection.normalized : Vector2.right;
@@ -329,6 +351,7 @@ public class PlayerController : NetworkBehaviour
         rb.linearVelocity = velocity;
 
         knockbackControlLockUntil = Time.time + knockbackControlLock;
+        return true;
     }
 
     [ClientRpc]
@@ -415,9 +438,46 @@ public class PlayerController : NetworkBehaviour
 
     private void ApplyColor(Color color)
     {
+        currentPlayerColor = color;
+        UpdatePlayerVisualState();
+    }
+
+    private void BeginInvulnerability()
+    {
+        if (!IsServer)
+        {
+            return;
+        }
+
+        invulnerableUntil = Time.time + Mathf.Max(0f, respawnInvulnerabilitySeconds);
+        IsInvulnerable.Value = respawnInvulnerabilitySeconds > 0f;
+    }
+
+    private void UpdateInvulnerabilityState()
+    {
+        if (!IsServer || !IsInvulnerable.Value)
+        {
+            return;
+        }
+
+        if (Time.time >= invulnerableUntil)
+        {
+            IsInvulnerable.Value = false;
+        }
+    }
+
+    private void OnInvulnerabilityChanged(bool previousValue, bool newValue)
+    {
+        UpdatePlayerVisualState();
+    }
+
+    private void UpdatePlayerVisualState()
+    {
         if (playerRenderer != null)
         {
-            playerRenderer.material.color = color;
+            playerRenderer.material.color = IsInvulnerable.Value
+                ? Color.Lerp(currentPlayerColor, Color.white, 0.55f)
+                : currentPlayerColor;
         }
     }   
 

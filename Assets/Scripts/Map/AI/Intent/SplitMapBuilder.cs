@@ -1,8 +1,8 @@
 using UnityEngine;
 
-public sealed class IslandThemeMapBuilder : IAiThemeMapBuilder
+public sealed class SplitMapBuilder : IAiThemeMapBuilder
 {
-    public string Theme => "island";
+    public string Theme => "split";
 
     public AiMapLayoutDto Build(AiMapIntentDto intent, AiMapGenerateRequest request)
     {
@@ -32,6 +32,7 @@ public sealed class IslandThemeMapBuilder : IAiThemeMapBuilder
         map.player2Spawn = new AiVector2IntDto { x = map.width - 4, y = centerY };
 
         AiThemeMapBuilderUtility.EnsureSpawnRules(map);
+        EnsureMinimumFloorCoverage(map, centerX, centerY);
 
         return map;
     }
@@ -45,5 +46,36 @@ public sealed class IslandThemeMapBuilder : IAiThemeMapBuilder
             Mathf.Clamp(endX, 1, map.width - 2),
             Mathf.Clamp(y, 1, map.height - 2),
             1);
+    }
+
+    private void EnsureMinimumFloorCoverage(AiMapLayoutDto map, int centerX, int centerY)
+    {
+        const int targetFloorCount = 34;
+
+        if (CountFloorTiles(map) >= targetFloorCount)
+        {
+            return;
+        }
+
+        AddPlatform(map, centerX - 3, centerX + 3, centerY);
+        AddPlatform(map, 2, 7, Mathf.Clamp(centerY - 2, 1, map.height - 2));
+        AddPlatform(map, map.width - 8, map.width - 3, Mathf.Clamp(centerY + 2, 1, map.height - 2));
+
+        AiThemeMapBuilderUtility.EnsureSpawnRules(map);
+    }
+
+    private int CountFloorTiles(AiMapLayoutDto map)
+    {
+        int count = 0;
+
+        for (int i = 0; i < map.tiles.Length; i++)
+        {
+            if (map.tiles[i] == 1)
+            {
+                count++;
+            }
+        }
+
+        return count;
     }
 }

@@ -8,7 +8,6 @@
 public class AiMapGenerateRequest
 {
     public string roomId;
-    public string prompt;
     public int width;
     public int height;
     public int playerCount;

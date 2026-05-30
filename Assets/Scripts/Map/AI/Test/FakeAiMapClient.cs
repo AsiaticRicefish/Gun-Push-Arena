@@ -9,32 +9,18 @@ public class FakeAiMapClient : IAiMapClient
         {
             success = true,
             errorMessage = string.Empty,
-            map = CreateSampleMap(request?.prompt)
+            map = CreateSampleMap()
         };
 
         return Task.FromResult(response);
     }
 
-    private AiMapLayoutDto CreateSampleMap(string prompt)
+    private AiMapLayoutDto CreateSampleMap()
     {
-        string normalizedPrompt = string.IsNullOrEmpty(prompt)
-            ? string.Empty
-            : prompt.ToLower();
-
-        if (normalizedPrompt.Contains("bridge"))
-        {
-            return CreateBridgeMap();
-        }
-
-        if (normalizedPrompt.Contains("island"))
-        {
-            return CreateIslandMap();
-        }
-        
-        return CreateDefaultSampleMap();
+        return CreateBalancedMap();
     }
 
-    private AiMapLayoutDto CreateBridgeMap()
+    private AiMapLayoutDto CreateBalancedMap()
     {
         int width = 17;
         int height = 11;
@@ -58,7 +44,7 @@ public class FakeAiMapClient : IAiMapClient
         return CreateLayoutDto(width, height, tiles);
     }
 
-    private AiMapLayoutDto CreateIslandMap()
+    private AiMapLayoutDto CreateSplitMap()
     {
         int width = 17;
         int height = 11;

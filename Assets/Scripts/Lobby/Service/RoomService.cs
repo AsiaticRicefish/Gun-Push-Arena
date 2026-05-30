@@ -148,20 +148,6 @@ public class RoomService
             theme).AsUniTask();
     }
 
-    public async UniTask UpdateAiStyleHintAsync(string aiStyleHint)
-    {
-        // AI 옵션 힌트 변경도 방장 전용입니다.
-        if (!CanHostControlRoom())
-        {
-            NotifyError("Only host can change AI style hint.");
-            return;
-        }
-
-        await roomRepository.UpdateAiStyleHintAsync(
-            CurrentRoom.RoomId,
-            aiStyleHint).AsUniTask();
-    }
-
     public async UniTask UpdateReadyAsync(bool isReady)
     {
         // ready는 현재 방에 들어와 있을 때만 변경할 수 있습니다.

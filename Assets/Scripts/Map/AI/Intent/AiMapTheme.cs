@@ -1,6 +1,7 @@
 public enum AiMapTheme
 {
-    Bridge,
-    Island,
-    Warehouse
+    Balanced,
+    Split,
+    Vertical,
+    Chaos
 }

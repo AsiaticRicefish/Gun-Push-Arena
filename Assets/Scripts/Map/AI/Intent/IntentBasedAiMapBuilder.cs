@@ -6,15 +6,16 @@ public sealed class IntentBasedAiMapBuilder
     {
         builders = new IAiThemeMapBuilder[]
         {
-            new BridgeThemeMapBuilder(),
-            new IslandThemeMapBuilder(),
-            new WarehouseThemeMapBuilder()
+            new BalancedMapBuilder(),
+            new SplitMapBuilder(),
+            new VerticalMapBuilder(),
+            new ChaosMapBuilder()
         };
     }
 
     public AiMapLayoutDto Build(AiMapIntentDto intent, AiMapGenerateRequest request)
     {
-        string theme = AiThemeMapBuilderUtility.Normalize(intent?.theme, "bridge");
+        string theme = AiThemeMapBuilderUtility.Normalize(intent?.theme, "balanced");
 
         for (int i = 0; i < builders.Length; i++)
         {

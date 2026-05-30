@@ -1,8 +1,8 @@
 using UnityEngine;
 
-public sealed class BridgeThemeMapBuilder : IAiThemeMapBuilder
+public sealed class BalancedMapBuilder : IAiThemeMapBuilder
 {
-    public string Theme => "bridge";
+    public string Theme => "balanced";
 
     public AiMapLayoutDto Build(AiMapIntentDto intent, AiMapGenerateRequest request)
     {
@@ -33,6 +33,7 @@ public sealed class BridgeThemeMapBuilder : IAiThemeMapBuilder
 
         AiThemeMapBuilderUtility.ApplyWalls(map, intent);
         AiThemeMapBuilderUtility.EnsureSpawnRules(map);
+        EnsureMinimumFloorCoverage(map, centerX, centerY);
 
         return map;
     }
@@ -46,5 +47,36 @@ public sealed class BridgeThemeMapBuilder : IAiThemeMapBuilder
             Mathf.Clamp(endX, 1, map.width - 2),
             Mathf.Clamp(y, 1, map.height - 2),
             1);
+    }
+
+    private void EnsureMinimumFloorCoverage(AiMapLayoutDto map, int centerX, int centerY)
+    {
+        const int targetFloorCount = 34;
+
+        if (CountFloorTiles(map) >= targetFloorCount)
+        {
+            return;
+        }
+
+        AddPlatform(map, centerX - 4, centerX + 4, centerY);
+        AddPlatform(map, 2, 7, Mathf.Clamp(centerY + 2, 1, map.height - 2));
+        AddPlatform(map, map.width - 8, map.width - 3, Mathf.Clamp(centerY - 2, 1, map.height - 2));
+
+        AiThemeMapBuilderUtility.EnsureSpawnRules(map);
+    }
+
+    private int CountFloorTiles(AiMapLayoutDto map)
+    {
+        int count = 0;
+
+        for (int i = 0; i < map.tiles.Length; i++)
+        {
+            if (map.tiles[i] == 1)
+            {
+                count++;
+            }
+        }
+
+        return count;
     }
 }

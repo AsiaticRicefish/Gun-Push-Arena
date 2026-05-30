@@ -117,27 +117,28 @@ public class AuthManager : GlobalSingleton<AuthManager>, IAuthService
     /// </summary>
     /// <param name="nickname"></param>
     /// <returns></returns>
-    public async Task<bool> UpdateNicknameAsync(string nickname)
+    public async Task<NicknameUpdateResult> UpdateNicknameAsync(string nickname)
     {
         if (!IsLoggedIn || CurrentUserData == null)
         {
-            Debug.LogError("[Auth] 로그인 상태에서만 닉네임 업데이트 가능");
-            return false;
+            Debug.LogWarning("[Auth] 로그인 상태에서만 닉네임 업데이트 가능");
+            return NicknameUpdateResult.NotLoggedIn;
         }
 
-        bool success = await userDataService.UpdateNicknameAsync(UserId, nickname);
-        if (!success)
+        NicknameUpdateResult result = await userDataService.UpdateNicknameAsync(UserId, nickname);
+        if (result != NicknameUpdateResult.Success)
         {
-            Debug.LogError("[Auth] 닉네임 업데이트 실패");
-            return false;
+            Debug.LogWarning($"[Auth] 닉네임 업데이트 실패: {result}");
+            return result;
         }
 
-        CurrentUserData.Nickname = nickname;
+        CurrentUserData.Nickname = nickname.Trim();
+        CurrentUserData.NormalizedNickname = UserDataService.NormalizeNickname(nickname);
         CurrentUserData.IsNicknameSet = true;
         CurrentUserData.UpdatedAt = Firebase.Firestore.Timestamp.GetCurrentTimestamp();
 
         Debug.Log($"[Auth] 현재 유저 닉네임 업데이트: {nickname}");
-        return true;
+        return NicknameUpdateResult.Success;
     }
 
     /// <summary>

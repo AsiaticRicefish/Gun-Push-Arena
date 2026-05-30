@@ -6,6 +6,7 @@ public class UserData
 {
     [FirestoreProperty] public string Uid { get; set; }    
     [FirestoreProperty] public string Nickname { get; set; }
+    [FirestoreProperty] public string NormalizedNickname { get; set; }
     [FirestoreProperty] public string ColorHex { get; set; }
 
     // 닉네임이 설정되었는지 여부를 나타냄

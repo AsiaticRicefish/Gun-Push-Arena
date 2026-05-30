@@ -14,8 +14,7 @@ public class MapPreviewSpawner : MonoBehaviour
     [SerializeField] private PreviewMapSource previewMapSource = PreviewMapSource.Random;
 
     [Header("AI Preview")]
-    [SerializeField] private AiMapTheme aiMapTheme = AiMapTheme.Bridge;
-    [SerializeField] private string aiStyleHint = "";
+    [SerializeField] private AiMapTheme aiMapTheme = AiMapTheme.Balanced;
 
     [Header("Validation")]
     [SerializeField] private MapValidationSettings validationSettings;
@@ -76,7 +75,6 @@ public class MapPreviewSpawner : MonoBehaviour
                 AiMapGenerateRequest request = new AiMapGenerateRequest
                 {
                     roomId = "preview_room",
-                    prompt = aiStyleHint,
                     width = 17,
                     height = 11,
                     playerCount = 2
@@ -92,7 +90,6 @@ public class MapPreviewSpawner : MonoBehaviour
                 AiMapGenerateRequest ollamaRequest = new AiMapGenerateRequest
                 {
                     roomId = "preview_room",
-                    prompt = aiStyleHint,
                     width = 17,
                     height = 11,
                     playerCount = 2

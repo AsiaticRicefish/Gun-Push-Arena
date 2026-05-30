@@ -2,7 +2,7 @@
 public class AiMapIntentDto
 {
     public string theme;
-    public int bridgeCount;
+    public int routeCount;
     public string spawnDistance;
     public string dangerLevel;
     public string wallDensity;

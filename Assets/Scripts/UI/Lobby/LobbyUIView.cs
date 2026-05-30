@@ -37,7 +37,6 @@ public class LobbyUIView : MonoBehaviour
     [Header("Map Setup")]
     [SerializeField] private GameObject mapSetupPanel;
     [SerializeField] private TMP_Dropdown themeDropdown;
-    [SerializeField] private TMP_InputField aiStyleHintInput;
     [SerializeField] private Button generateMapButton;
     [SerializeField] private TMP_Text mapStatusText;
     [SerializeField] private GameObject mapPreviewArea;
@@ -50,7 +49,6 @@ public class LobbyUIView : MonoBehaviour
     [SerializeField] private Button startGameButton;
 
     public string RoomCodeInput => roomCodeInput != null ? roomCodeInput.text.Trim() : "";
-    public string AiStyleHintInput => aiStyleHintInput != null ? aiStyleHintInput.text.Trim() : "";
 
     public void Initialize()
     {
@@ -367,11 +365,6 @@ public class LobbyUIView : MonoBehaviour
             themeDropdown.interactable = interactable;
         }
 
-        if (aiStyleHintInput != null)
-        {
-            aiStyleHintInput.interactable = interactable;
-        }
-
         if (generateMapButton != null)
         {
             generateMapButton.gameObject.SetActive(interactable);
@@ -432,10 +425,12 @@ public class LobbyUIView : MonoBehaviour
     {
         switch (theme)
         {
-            case AiMapTheme.Island:
+            case AiMapTheme.Split:
                 return 1;
-            case AiMapTheme.Warehouse:
+            case AiMapTheme.Vertical:
                 return 2;
+            case AiMapTheme.Chaos:
+                return 3;
             default:
                 return 0;
         }

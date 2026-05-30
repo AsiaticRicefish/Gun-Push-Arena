@@ -62,7 +62,6 @@ public class RoomMapService
         AiMapGenerateRequest request = new AiMapGenerateRequest
         {
             roomId = room.RoomId,
-            prompt = room.AiStyleHint,
             width = room.MapWidth,
             height = room.MapHeight,
             playerCount = room.PlayerCount

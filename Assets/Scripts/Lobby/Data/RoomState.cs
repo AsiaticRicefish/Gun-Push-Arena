@@ -16,8 +16,6 @@ public class RoomState
     [FirestoreProperty] public int PlayerCount { get; set; } // 현재 인원
     
     [FirestoreProperty] public string SelectedTheme { get; set; } // 맵 테마
-    [FirestoreProperty] public string AiStyleHint { get; set; } // 선택 테마 안에서 AI 옵션
-
     [FirestoreProperty] public int MapWidth { get; set; }
     [FirestoreProperty] public int MapHeight { get; set; }
     [FirestoreProperty] public int MapVersion { get; set; } // 맵을 재생성할 때 증가함. 클라이언트가 새 맵인지 판단하기 좋음

@@ -212,17 +212,6 @@ public class LobbyPresenter
         await roomService.UpdateThemeAsync(theme);
     }
 
-    public async UniTask HandleAiStyleHintChangedAsync()
-    {
-        // AI 옵션 힌트는 방장만 변경할 수 있습니다.
-        if (isBusy || !roomService.CanHostControlRoom())
-        {
-            return;
-        }
-
-        await roomService.UpdateAiStyleHintAsync(view.AiStyleHintInput);
-    }
-
     public async UniTask HandleGenerateMapAsync()
     {
         // 방장만 최종 맵을 생성하고 저장할 수 있습니다.
@@ -575,11 +564,13 @@ public class LobbyPresenter
         switch (index)
         {
             case 1:
-                return AiMapTheme.Island;
+                return AiMapTheme.Split;
             case 2:
-                return AiMapTheme.Warehouse;
+                return AiMapTheme.Vertical;
+            case 3:
+                return AiMapTheme.Chaos;
             default:
-                return AiMapTheme.Bridge;
+                return AiMapTheme.Balanced;
         }
     }
 }

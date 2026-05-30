@@ -15,12 +15,12 @@ public sealed class OllamaAiMapClient : IAiMapClient
     private readonly IntentBasedAiMapBuilder mapBuilder;
 
     public OllamaAiMapClient()
-        : this(AiMapTheme.Bridge, DefaultEndPoint, DefaultModel)
+        : this(AiMapTheme.Balanced, DefaultEndPoint, DefaultModel)
     {
     }
 
     public OllamaAiMapClient(string endpoint, string model)
-        : this(AiMapTheme.Bridge, endpoint, model)
+        : this(AiMapTheme.Balanced, endpoint, model)
     {
     }
 
@@ -44,7 +44,7 @@ public sealed class OllamaAiMapClient : IAiMapClient
             return Fail("AI map request is null.");
         }
 
-        string prompt = BuildIntentPrompt(request);
+        string prompt = BuildIntentPrompt();
         string requestJson = JsonUtility.ToJson(new OllamaGenerateRequest
         {
             model = model,
@@ -87,10 +87,9 @@ public sealed class OllamaAiMapClient : IAiMapClient
         };
     }
 
-    private string BuildIntentPrompt(AiMapGenerateRequest request)
+    private string BuildIntentPrompt()
     {
         string selectedThemeId = ToThemeId(selectedTheme);
-        string styleHint = SanitizeUserPrompt(request.prompt);
 
         return $@"
 You create a compact JSON option intent for a Unity 2D arena map.
@@ -100,13 +99,13 @@ Do not use markdown.
 Do not explain anything.
 Do not create tile arrays.
 
-The selected map theme is ""{selectedThemeId}"".
+The selected map structure preset is ""{selectedThemeId}"".
 You must keep theme exactly ""{selectedThemeId}"".
-Only choose variation options inside this selected theme.
+Only choose variation options inside this selected structure preset.
 
 Allowed values:
-- theme: ""bridge"", ""island"", ""warehouse""
-- bridgeCount: integer from 0 to 3
+- theme: ""balanced"", ""split"", ""vertical"", ""chaos""
+- routeCount: integer from 0 to 3
 - spawnDistance: ""close"", ""medium"", ""far""
 - dangerLevel: ""low"", ""medium"", ""high""
 - wallDensity: ""none"", ""low"", ""medium""
@@ -114,23 +113,20 @@ Allowed values:
 - seed: positive integer
 
 Interpret Korean and English user text.
-Use the optional style hint only to tune dangerLevel, wallDensity, platformScale, bridgeCount, and seed.
-Do not change the selected theme.
+Choose variation options that fit the selected structure preset.
+Do not change the selected structure preset.
 Pick different seed values to create different map variations.
 
 Output schema:
 {{
   ""theme"": ""{selectedThemeId}"",
-  ""bridgeCount"": 1,
+  ""routeCount"": 1,
   ""spawnDistance"": ""far"",
   ""dangerLevel"": ""medium"",
   ""wallDensity"": ""none"",
   ""platformScale"": ""medium"",
   ""seed"": 12345
 }}
-
-Optional style hint:
-{styleHint}
 ";
     }
 
@@ -190,15 +186,15 @@ Optional style hint:
         intent.dangerLevel = NormalizeOption(intent.dangerLevel, "medium", "low", "medium", "high");
         intent.wallDensity = NormalizeOption(intent.wallDensity, "none", "none", "low", "medium");
         intent.platformScale = NormalizeOption(intent.platformScale, "medium", "small", "medium", "large");
-        intent.bridgeCount = Mathf.Clamp(intent.bridgeCount, 0, 3);
+        intent.routeCount = Mathf.Clamp(intent.routeCount, 0, 3);
         if (intent.seed == 0 || intent.seed == 12345)
         {
             intent.seed = Environment.TickCount;
         }
 
-        if (intent.theme == "bridge" && intent.bridgeCount <= 0)
+        if (intent.theme == "balanced" && intent.routeCount <= 0)
         {
-            intent.bridgeCount = 1;
+            intent.routeCount = 1;
         }
     }
 
@@ -226,32 +222,18 @@ Optional style hint:
     {
         switch (theme)
         {
-            case AiMapTheme.Island:
-                return "island";
+            case AiMapTheme.Split:
+                return "split";
 
-            case AiMapTheme.Warehouse:
-                return "warehouse";
+            case AiMapTheme.Vertical:
+                return "vertical";
+
+            case AiMapTheme.Chaos:
+                return "chaos";
 
             default:
-                return "bridge";
+                return "balanced";
         }
-    }
-
-    private string SanitizeUserPrompt(string prompt)
-    {
-        if (string.IsNullOrWhiteSpace(prompt))
-        {
-            return "default balanced arena";
-        }
-
-        string sanitized = prompt.Trim();
-
-        if (sanitized.Length > 300)
-        {
-            sanitized = sanitized.Substring(0, 300);
-        }
-
-        return sanitized;
     }
 
     private bool TryExtractJsonObject(string text, out string json)

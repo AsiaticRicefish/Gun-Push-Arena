@@ -56,8 +56,7 @@ public class FirestoreRoomRepository : IRoomRepository
             Status = RoomStatus.Waiting.ToString(),
             MaxPlayers = maxPlayers,
             PlayerCount = 1,
-            SelectedTheme = AiMapTheme.Bridge.ToString(),
-            AiStyleHint = "",
+            SelectedTheme = AiMapTheme.Balanced.ToString(),
             MapWidth = 17,
             MapHeight = 11,
             MapVersion = 0,
@@ -265,19 +264,6 @@ public class FirestoreRoomRepository : IRoomRepository
         return roomRef.UpdateAsync(new Dictionary<string, object>
         {
             { nameof(RoomState.SelectedTheme), theme.ToString() },
-            { nameof(RoomState.UpdatedAt), Timestamp.GetCurrentTimestamp() }
-        });
-    }
-
-    public Task UpdateAiStyleHintAsync(string roomId, string aiStyleHint)
-    {
-        // AI 옵션 힌트를 저장합니다.
-        // null이 들어오면 Firestore에는 빈 문자열로 저장합니다.
-        DocumentReference roomRef = firestore.Collection(RoomsCollection).Document(roomId);
-
-        return roomRef.UpdateAsync(new Dictionary<string, object>
-        {
-            { nameof(RoomState.AiStyleHint), aiStyleHint ?? "" },
             { nameof(RoomState.UpdatedAt), Timestamp.GetCurrentTimestamp() }
         });
     }

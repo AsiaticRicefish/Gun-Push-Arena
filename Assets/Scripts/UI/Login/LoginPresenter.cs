@@ -2,10 +2,13 @@ using System.Threading.Tasks;
 
 public class LoginPresenter
 {
+    private const int NicknameSaveTimeoutMs = 8000;
+
     private readonly LoginUIView view;
     private readonly IAuthService authService;
     private readonly ISceneLoader sceneLoader;
     private readonly string lobbySceneName;
+    private bool isNicknameSaveInProgress;
 
     public LoginPresenter(LoginUIView view, IAuthService authService, ISceneLoader sceneLoader, string lobbySceneName)
     {
@@ -47,28 +50,45 @@ public class LoginPresenter
 
     public async Task HandleConfirmNicknameAsync()
     {
-        string nickname = view.Nickname;
-
-        if (!IsValidNickname(nickname))
+        if (isNicknameSaveInProgress)
         {
-            view.SetStatus("Nickname must be 2-12 characters.");
             return;
         }
 
+        string nickname = view.Nickname;
+
+        if (!UserDataService.IsValidNickname(nickname))
+        {
+            view.ShowNotice("Nickname must be 2-12 characters.");
+            return;
+        }
+
+        isNicknameSaveInProgress = true;
         view.SetNicknameConfirmInteractable(false);
         view.SetStatus("Saving nickname...");
 
-        bool success = await authService.UpdateNicknameAsync(nickname);
-
-        if (success)
+        try
         {
-            view.SetStatus("Nickname saved.");
-            await LoadLobbySceneAsync();
-            return;
-        }
+            NicknameUpdateResult result = await UpdateNicknameWithTimeoutAsync(nickname);
 
-        view.SetStatus("Nickname save failed.");
-        view.SetNicknameConfirmInteractable(true);
+            if (result == NicknameUpdateResult.Success)
+            {
+                view.SetStatus("Nickname saved.");
+                await LoadLobbySceneAsync();
+                return;
+            }
+
+            view.ShowNotice(GetNicknameErrorMessage(result));
+        }
+        catch
+        {
+            view.ShowNotice("Nickname save failed.");
+        }
+        finally
+        {
+            isNicknameSaveInProgress = false;
+            view.SetNicknameConfirmInteractable(true);
+        }
     }
 
     private void OpenNicknamePanel()
@@ -80,9 +100,33 @@ public class LoginPresenter
         view.OpenNicknamePanel(nickname);
     }
 
-    private bool IsValidNickname(string nickname)
+    private string GetNicknameErrorMessage(NicknameUpdateResult result)
     {
-        return nickname.Length >= 2 && nickname.Length <= 12;
+        switch (result)
+        {
+            case NicknameUpdateResult.Duplicate:
+                return "Nickname is already taken.";
+            case NicknameUpdateResult.Invalid:
+                return "Nickname must be 2-12 characters.";
+            case NicknameUpdateResult.NotLoggedIn:
+                return "Login is required.";
+            default:
+                return "Nickname save failed.";
+        }
+    }
+
+    private async Task<NicknameUpdateResult> UpdateNicknameWithTimeoutAsync(string nickname)
+    {
+        Task<NicknameUpdateResult> updateTask = authService.UpdateNicknameAsync(nickname);
+        Task timeoutTask = Task.Delay(NicknameSaveTimeoutMs);
+
+        Task completedTask = await Task.WhenAny(updateTask, timeoutTask);
+        if (completedTask != updateTask)
+        {
+            return NicknameUpdateResult.Failed;
+        }
+
+        return await updateTask;
     }
 
     private async Task LoadLobbySceneAsync()

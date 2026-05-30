@@ -144,9 +144,4 @@ public class LobbyUIController : MonoBehaviour
         presenter.HandleThemeChangedAsync(index).Forget();
     }
 
-    public void OnAiStyleHintChanged()
-    {
-        // 입력값 자체는 View가 제공하고, 방장 권한 검사는 Presenter/RoomService에서 처리합니다.
-        presenter.HandleAiStyleHintChangedAsync().Forget();
-    }
 }
