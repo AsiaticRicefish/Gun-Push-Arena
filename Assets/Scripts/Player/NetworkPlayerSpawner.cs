@@ -82,8 +82,14 @@ public sealed class NetworkPlayerSpawner : MonoBehaviour
                 continue;
             }
 
+            PlayerController playerController = playerObject.GetComponent<PlayerController>();
             // SpawnAsPlayerObject를 사용해야 해당 클라이언트의 IsOwner가 true가 되고 입력을 받을 수 있습니다.
             networkObject.SpawnAsPlayerObject(clientId);
+
+            if (playerController != null)
+            {
+                playerController.InitializeRoundState(spawnPosition, mapSpawner.DeathY);
+            }
 
             Debug.Log($"[NetworkPlayerSpawner] Spawned player. ClientId: {clientId}, UserId: {player.UserId}, SlotIndex: {player.SlotIndex}, Position: {spawnPosition}");
         }

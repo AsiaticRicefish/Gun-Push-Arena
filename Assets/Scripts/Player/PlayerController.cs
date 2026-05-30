@@ -5,11 +5,22 @@ using System.Collections;
 
 public class PlayerController : NetworkBehaviour
 {
+    private const int DefaultLives = 3;
+    private const int DefaultMaxJumpCount = 2;
+    private const float MinimumJumpForce = 12f;
+    private const float MaximumGravityScale = 2.5f;
+
+    private static PhysicsMaterial2D noFrictionMaterial;
+
     private PlayerInputAction input;
     private Rigidbody2D rb;
     private Collider2D playerCollider;
     private float serverMoveInput;
     private bool serverJumpRequested;
+    private int serverFacingDirection = 1;
+    private int remainingJumpCount;
+    private Vector3 respawnPosition;
+    private float deathY = -20f;
 
     // 로그인된 사용자의 UID를 서버로 전송하기 위해 IAuthService 인터페이스를 사용하여 AuthManager에 접근합니다.
     // 이를 통해 PlayerController가 AuthManager에 직접 의존하지 않고도 로그인 정보를 사용할 수 있도록 합니다.
@@ -17,12 +28,25 @@ public class PlayerController : NetworkBehaviour
 
     [Header("Movement")]
     [SerializeField] private float moveSpeed = 5f;
-    [SerializeField] private float jumpForce = 8f;
+    [SerializeField] private float jumpForce = 12f;
+    [SerializeField] private float gravityScale = 2.5f;
+    [SerializeField] private int maxJumpCount = DefaultMaxJumpCount;
     [SerializeField] private LayerMask groundLayerMask = Physics2D.DefaultRaycastLayers;
     [SerializeField] private float groundCheckDistance = 0.08f;
 
+    [Header("Combat")]
+    [SerializeField] private NetworkObject projectilePrefab;
+    [SerializeField] private Vector2 projectileSpawnOffset = new Vector2(0.45f, 0.05f);
+    [SerializeField] private float projectileSpeed = 12f;
+    [SerializeField] private float fireCooldown = 0.25f;
+    [SerializeField] private Vector2 hitKnockback = new Vector2(8f, 4f);
+    [SerializeField] private float knockbackControlLock = 0.18f;
+
     [Header("Visual")]
     [SerializeField] private Renderer playerRenderer;
+
+    private float nextServerFireTime;
+    private float knockbackControlLockUntil;
 
     /// <summary>
     /// 플레이어의 네트워크 동기화 데이터를 관리합니다. 서버에서만 쓰기 권한이 있으며, 모든 클라이언트가 읽을 수 있습니다.
@@ -33,11 +57,32 @@ public class PlayerController : NetworkBehaviour
         NetworkVariableWritePermission.Server   // 값을 쓸 수 있는 대상 → 서버만 (Server)
         );
 
+    public NetworkVariable<int> Lives = new NetworkVariable<int>(
+        DefaultLives,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Server);
+
+    public bool IsAlive => Lives.Value > 0;
+
     private void Awake()
     {
         input = new PlayerInputAction();
         rb = GetComponent<Rigidbody2D>();
         playerCollider = GetComponent<Collider2D>();
+        jumpForce = Mathf.Max(jumpForce, MinimumJumpForce);
+        gravityScale = Mathf.Min(gravityScale, MaximumGravityScale);
+        maxJumpCount = Mathf.Max(1, maxJumpCount);
+        remainingJumpCount = maxJumpCount;
+
+        if (rb != null)
+        {
+            rb.gravityScale = gravityScale;
+        }
+
+        if (playerCollider != null)
+        {
+            playerCollider.sharedMaterial = GetNoFrictionMaterial();
+        }
 
         if (playerRenderer == null)
         {
@@ -48,6 +93,19 @@ public class PlayerController : NetworkBehaviour
     public void Construct(IAuthService authService)
     {
         this.authService = authService;
+    }
+
+    public void InitializeRoundState(Vector3 spawnPosition, float deathY)
+    {
+        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer)
+        {
+            return;
+        }
+
+        respawnPosition = spawnPosition;
+        this.deathY = deathY;
+        Lives.Value = DefaultLives;
+        remainingJumpCount = maxJumpCount;
     }
 
     // 여기서 네트워크 스폰 시 초기화 작업을 수행할 수 있습니다(Netcode 기준 진입점)
@@ -113,12 +171,19 @@ public class PlayerController : NetworkBehaviour
     private void Update()
     {
         if (!IsOwner) return;
+        if (Lives.Value <= 0) return;
 
         Vector2 moveInput = input.Player.Move.ReadValue<Vector2>();
         bool jumpPressed = input.Player.Jump.WasPressedThisFrame();
+        bool firePressed = input.Player.Fire.WasPressedThisFrame();
 
         // 입력에 따라 서버로 이동 명령을 보냅니다
         MoveServerRpc(moveInput.x, jumpPressed);
+
+        if (firePressed)
+        {
+            FireServerRpc();
+        }
     }
 
     private void FixedUpdate()
@@ -128,12 +193,36 @@ public class PlayerController : NetworkBehaviour
             return;
         }
 
-        Vector2 velocity = rb.linearVelocity;
-        velocity.x = serverMoveInput * moveSpeed;
+        if (Lives.Value <= 0)
+        {
+            rb.linearVelocity = Vector2.zero;
+            serverMoveInput = 0f;
+            serverJumpRequested = false;
+            return;
+        }
 
-        if (serverJumpRequested && IsGrounded())
+        if (transform.position.y < deathY)
+        {
+            HandleFallOut();
+            return;
+        }
+
+        bool isGrounded = IsGrounded();
+        if (isGrounded && rb.linearVelocity.y <= 0.01f)
+        {
+            remainingJumpCount = maxJumpCount;
+        }
+
+        Vector2 velocity = rb.linearVelocity;
+        if (Time.time >= knockbackControlLockUntil)
+        {
+            velocity.x = serverMoveInput * moveSpeed;
+        }
+
+        if (serverJumpRequested && remainingJumpCount > 0)
         {
             velocity.y = jumpForce;
+            remainingJumpCount--;
         }
 
         rb.linearVelocity = velocity;
@@ -148,8 +237,104 @@ public class PlayerController : NetworkBehaviour
     [ServerRpc]
     private void MoveServerRpc(float horizontalInput, bool jumpPressed)
     {
+        if (Lives.Value <= 0)
+        {
+            return;
+        }
+
         serverMoveInput = Mathf.Clamp(horizontalInput, -1f, 1f);
+        if (serverMoveInput > 0.01f)
+        {
+            serverFacingDirection = 1;
+        }
+        else if (serverMoveInput < -0.01f)
+        {
+            serverFacingDirection = -1;
+        }
+
         serverJumpRequested |= jumpPressed;
+    }
+
+    [ServerRpc]
+    private void FireServerRpc()
+    {
+        if (Lives.Value <= 0)
+        {
+            return;
+        }
+
+        if (Time.time < nextServerFireTime)
+        {
+            return;
+        }
+
+        if (projectilePrefab == null)
+        {
+            Debug.LogWarning("[PlayerController] Projectile prefab is missing.");
+            return;
+        }
+
+        nextServerFireTime = Time.time + fireCooldown;
+
+        int fireDirection = serverFacingDirection == 0 ? 1 : serverFacingDirection;
+        Vector3 spawnOffset = new Vector3(projectileSpawnOffset.x * fireDirection, projectileSpawnOffset.y, 0f);
+        NetworkObject projectileObject = Instantiate(projectilePrefab, transform.position + spawnOffset, Quaternion.identity);
+        NetworkProjectile projectile = projectileObject.GetComponent<NetworkProjectile>();
+
+        projectileObject.Spawn();
+
+        if (projectile != null)
+        {
+            projectile.Initialize(NetworkObjectId, new Vector2(fireDirection, 0f), projectileSpeed);
+        }
+    }
+
+    private void HandleFallOut()
+    {
+        Lives.Value = Mathf.Max(0, Lives.Value - 1);
+        serverMoveInput = 0f;
+        serverJumpRequested = false;
+
+        if (Lives.Value > 0)
+        {
+            Respawn();
+            Debug.Log($"[PlayerController] Player fell. Lives: {Lives.Value}");
+            return;
+        }
+
+        rb.linearVelocity = Vector2.zero;
+        Debug.Log("[PlayerController] Player eliminated.");
+    }
+
+    private void Respawn()
+    {
+        rb.linearVelocity = Vector2.zero;
+        rb.position = respawnPosition;
+        transform.position = respawnPosition;
+        remainingJumpCount = maxJumpCount;
+        knockbackControlLockUntil = 0f;
+    }
+
+    public void ApplyProjectileHit(Vector2 hitDirection)
+    {
+        if (!IsServer || rb == null || Lives.Value <= 0)
+        {
+            return;
+        }
+
+        Vector2 normalizedDirection = hitDirection.sqrMagnitude > 0f ? hitDirection.normalized : Vector2.right;
+        Vector2 velocity = rb.linearVelocity;
+        velocity.x = normalizedDirection.x * hitKnockback.x;
+        velocity.y = Mathf.Max(velocity.y, hitKnockback.y);
+        rb.linearVelocity = velocity;
+
+        knockbackControlLockUntil = Time.time + knockbackControlLock;
+    }
+
+    [ClientRpc]
+    public void AnnounceGameResultClientRpc(ulong winnerClientId)
+    {
+        GameResultPresenter.ShowResult(winnerClientId);
     }
 
     private bool IsGrounded()
@@ -235,4 +420,20 @@ public class PlayerController : NetworkBehaviour
             playerRenderer.material.color = color;
         }
     }   
+
+    private static PhysicsMaterial2D GetNoFrictionMaterial()
+    {
+        if (noFrictionMaterial != null)
+        {
+            return noFrictionMaterial;
+        }
+
+        noFrictionMaterial = new PhysicsMaterial2D("NoFriction")
+        {
+            friction = 0f,
+            bounciness = 0f
+        };
+
+        return noFrictionMaterial;
+    }
 }
