@@ -66,4 +66,9 @@ public class LoginUIController : MonoBehaviour
     {
         _ = presenter.HandleConfirmNicknameAsync();
     }
+
+    public void OnClickQuitGame()
+    {
+        ApplicationQuitter.Quit();
+    }
 }

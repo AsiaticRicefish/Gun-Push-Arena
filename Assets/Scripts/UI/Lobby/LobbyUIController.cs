@@ -57,6 +57,11 @@ public class LobbyUIController : MonoBehaviour
     private void Start()
     {
         // Repository는 Firestore에 직접 읽고 쓰는 계층입니다.
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlayBgm(SoundId.LobbyBgm);
+        }
+
         IRoomRepository roomRepository = new FirestoreRoomRepository();
 
         // RoomService는 현재 유저 기준의 방 규칙과 listener 관리를 담당합니다.
@@ -142,6 +147,11 @@ public class LobbyUIController : MonoBehaviour
     {
         // TMP_Dropdown의 index를 AiMapTheme으로 바꾸는 작업은 Presenter가 담당합니다.
         presenter.HandleThemeChangedAsync(index).Forget();
+    }
+
+    public void OnClickQuitGame()
+    {
+        ApplicationQuitter.Quit();
     }
 
 }
