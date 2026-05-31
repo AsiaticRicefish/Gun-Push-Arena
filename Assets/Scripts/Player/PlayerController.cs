@@ -238,6 +238,7 @@ public class PlayerController : NetworkBehaviour
         {
             velocity.y = jumpForce;
             remainingJumpCount--;
+            PlaySoundClientRpc(SoundId.Jump);
         }
 
         rb.linearVelocity = velocity;
@@ -302,6 +303,8 @@ public class PlayerController : NetworkBehaviour
         {
             projectile.Initialize(NetworkObjectId, new Vector2(fireDirection, 0f), projectileSpeed);
         }
+
+        PlaySoundClientRpc(SoundId.Fire);
     }
 
     private void HandleFallOut()
@@ -309,6 +312,7 @@ public class PlayerController : NetworkBehaviour
         Lives.Value = Mathf.Max(0, Lives.Value - 1);
         serverMoveInput = 0f;
         serverJumpRequested = false;
+        PlaySoundClientRpc(SoundId.Fall);
 
         if (Lives.Value > 0)
         {
@@ -330,6 +334,7 @@ public class PlayerController : NetworkBehaviour
         remainingJumpCount = maxJumpCount;
         knockbackControlLockUntil = 0f;
         BeginInvulnerability();
+        PlaySoundClientRpc(SoundId.Respawn);
     }
 
     public bool ApplyProjectileHit(Vector2 hitDirection)
@@ -351,7 +356,17 @@ public class PlayerController : NetworkBehaviour
         rb.linearVelocity = velocity;
 
         knockbackControlLockUntil = Time.time + knockbackControlLock;
+        PlaySoundClientRpc(SoundId.Hit);
         return true;
+    }
+
+    [ClientRpc]
+    private void PlaySoundClientRpc(SoundId soundId)
+    {
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlaySfx(soundId);
+        }
     }
 
     [ClientRpc]

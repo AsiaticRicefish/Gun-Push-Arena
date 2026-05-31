@@ -51,6 +51,11 @@ public class GameSceneBootstrap : MonoBehaviour
     private void Start()
     {
         // Unity 생명주기 메서드에서는 await할 수 없으므로 UniTask를 fire-and-forget으로 실행합니다.
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlayBgm(SoundId.GameBgm);
+        }
+
         LoadRoomMapAsync().Forget();
     }
 

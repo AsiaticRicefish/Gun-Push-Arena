@@ -73,10 +73,20 @@ public sealed class GameResultPresenter : MonoBehaviour
         if (isWinner)
         {
             view.ShowWin();
+            PlayLocalSfx(SoundId.Win);
         }
         else
         {
             view.ShowLose();
+            PlayLocalSfx(SoundId.Lose);
+        }
+    }
+
+    private void PlayLocalSfx(SoundId soundId)
+    {
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlaySfx(soundId);
         }
     }
 

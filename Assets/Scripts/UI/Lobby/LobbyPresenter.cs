@@ -227,6 +227,7 @@ public class LobbyPresenter
             // RoomMapService가 GeneratingMap 상태 전환, AI 맵 생성, 검증, DTO 변환, Firestore 저장까지 처리합니다.
             bool success = await roomMapService.GenerateAndSaveMapAsync();
 
+            PlayLocalSfx(success ? SoundId.MapGenerateSuccess : SoundId.MapGenerateFail);
             view.SetStatus(success ? "Map ready." : "Map generation failed.");
         });
     }
@@ -249,6 +250,7 @@ public class LobbyPresenter
         await RunBusyAsync(async () =>
         {
             view.SetStatus("Starting game...");
+            PlayLocalSfx(SoundId.GameStart);
 
             // 현재는 room status를 Starting으로 바꾸는 단계입니다.
             // 다음 단계에서 Relay 생성과 Netcode 시작이 이어집니다.
@@ -555,6 +557,14 @@ public class LobbyPresenter
         }
 
         return null;
+    }
+
+    private void PlayLocalSfx(SoundId soundId)
+    {
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlaySfx(soundId);
+        }
     }
 
     private AiMapTheme ConvertIndexToTheme(int index)
