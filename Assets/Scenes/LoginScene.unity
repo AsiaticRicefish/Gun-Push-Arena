@@ -927,7 +927,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Enter text...
+  m_text: 닉네임을 입력하세요
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 7d5559cba87d0a8468349247d48db325, type: 2}
   m_sharedMaterial: {fileID: 788549645831870570, guid: 7d5559cba87d0a8468349247d48db325, type: 2}

@@ -52,6 +52,7 @@ public class LobbyUIView : MonoBehaviour
 
     public void Initialize()
     {
+        RefreshThemeDropdownOptions();
         SetStatus("");
         SetMapStatus("");
         SetLoading(false);
@@ -100,7 +101,7 @@ public class LobbyUIView : MonoBehaviour
 
         if (roomStatusText != null)
         {
-            roomStatusText.text = room.Status;
+            roomStatusText.text = ToKoreanRoomStatus(room.Status);
         }
 
         SetMapStatus(CreateMapStatusText(room));
@@ -281,7 +282,7 @@ public class LobbyUIView : MonoBehaviour
     {
         if (readyButtonText != null)
         {
-            readyButtonText.text = isReady ? "Cancel Ready" : "Ready";
+            readyButtonText.text = isReady ? "준비 취소" : "준비";
         }
     }
 
@@ -309,7 +310,7 @@ public class LobbyUIView : MonoBehaviour
         }
 
         GUIUtility.systemCopyBuffer = roomCodeText.text;
-        SetStatus("Room code copied.");
+        SetStatus("방 코드가 복사되었습니다.");
     }
 
     private void ShowLobbyMode()
@@ -410,15 +411,67 @@ public class LobbyUIView : MonoBehaviour
 
         if (room.Status == RoomStatus.GeneratingMap.ToString())
         {
-            return "Generating map...";
+            return "맵 생성 중...";
         }
 
         if (room.FinalMap != null)
         {
-            return $"Map ready v{room.MapVersion}";
+            return $"맵 준비 완료 v{room.MapVersion}";
         }
 
-        return "No map generated.";
+        return "생성된 맵이 없습니다.";
+    }
+
+    private void RefreshThemeDropdownOptions()
+    {
+        if (themeDropdown == null)
+        {
+            return;
+        }
+
+        themeDropdown.ClearOptions();
+        themeDropdown.AddOptions(new List<string>
+        {
+            "균형형",
+            "분리형",
+            "수직형",
+            "혼돈형"
+        });
+    }
+
+    private string ToKoreanRoomStatus(string status)
+    {
+        if (status == RoomStatus.Waiting.ToString())
+        {
+            return "대기 중";
+        }
+
+        if (status == RoomStatus.GeneratingMap.ToString())
+        {
+            return "맵 생성 중";
+        }
+
+        if (status == RoomStatus.MapReady.ToString())
+        {
+            return "맵 준비 완료";
+        }
+
+        if (status == RoomStatus.Starting.ToString())
+        {
+            return "게임 시작 중";
+        }
+
+        if (status == RoomStatus.InGame.ToString())
+        {
+            return "게임 중";
+        }
+
+        if (status == RoomStatus.Closed.ToString())
+        {
+            return "방 종료";
+        }
+
+        return status;
     }
 
     private int ThemeToIndex(AiMapTheme theme)

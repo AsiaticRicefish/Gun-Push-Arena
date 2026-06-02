@@ -76,7 +76,7 @@ public class LobbyPresenter
         // 현재 방 상태 기준으로 버튼/패널 활성 상태를 한번 계산합니다.
         RefreshViewState();
 
-        view.SetStatus("Lobby ready.");
+        view.SetStatus("로비 준비 완료.");
     }
 
     public void Dispose()
@@ -102,7 +102,7 @@ public class LobbyPresenter
         // RunBusyAsync는 버튼 잠금, 예외 처리, 로딩 상태 해제를 공통으로 처리합니다.
         await RunBusyAsync(async () =>
         {
-            view.SetStatus("Creating room...");
+            view.SetStatus("방 생성 중...");
 
             // 현재 유저를 방장으로 하는 2인 방을 생성합니다.
             RoomState room = await roomService.CreateRoomAsync(2);
@@ -111,7 +111,7 @@ public class LobbyPresenter
             {
                 // 방장은 ready 대상에서 제외하거나 항상 ready로 볼 수 있으므로 true로 둡니다.
                 localReady = true;
-                view.SetStatus($"Room created: {room.RoomId}");
+                view.SetStatus($"방이 생성되었습니다: {room.RoomId}");
             }
         });
     }
@@ -128,13 +128,13 @@ public class LobbyPresenter
 
         if (string.IsNullOrWhiteSpace(roomCode))
         {
-            view.SetStatus("Enter room code.");
+            view.SetStatus("방 코드를 입력해 주세요.");
             return;
         }
 
         await RunBusyAsync(async () =>
         {
-            view.SetStatus("Joining room...");
+            view.SetStatus("방 참가 중...");
 
             // RoomService 내부에서 roomId 정규화, 유저 정보 조합, Repository 호출을 처리합니다.
             bool success = await roomService.JoinRoomAsync(roomCode);
@@ -144,11 +144,11 @@ public class LobbyPresenter
                 // 참가자는 처음 입장 시 준비 전 상태입니다.
                 localReady = false;
                 view.SetReadyState(false);
-                view.SetStatus("Joined room.");
+                view.SetStatus("방에 참가했습니다.");
             }
             else
             {
-                view.SetStatus("Join failed.");
+                view.SetStatus("방 참가에 실패했습니다.");
             }
         });
     }
@@ -162,7 +162,7 @@ public class LobbyPresenter
 
         await RunBusyAsync(async () =>
         {
-            view.SetStatus("Leaving room...");
+            view.SetStatus("방 나가는 중...");
 
             // RoomService가 Firestore player 문서 삭제와 listener 정리를 처리합니다.
             await roomService.LeaveRoomAsync();
@@ -171,7 +171,7 @@ public class LobbyPresenter
             localReady = false;
             view.SetReadyState(false);
             view.ClearRoomInfo();
-            view.SetStatus("Left room.");
+            view.SetStatus("방에서 나갔습니다.");
         });
     }
 
@@ -222,13 +222,13 @@ public class LobbyPresenter
 
         await RunBusyAsync(async () =>
         {
-            view.SetStatus("Generating map...");
+            view.SetStatus("맵 생성 중...");
 
             // RoomMapService가 GeneratingMap 상태 전환, AI 맵 생성, 검증, DTO 변환, Firestore 저장까지 처리합니다.
             bool success = await roomMapService.GenerateAndSaveMapAsync();
 
             PlayLocalSfx(success ? SoundId.MapGenerateSuccess : SoundId.MapGenerateFail);
-            view.SetStatus(success ? "Map ready." : "Map generation failed.");
+            view.SetStatus(success ? "맵 준비 완료." : "맵 생성에 실패했습니다.");
         });
     }
 
@@ -242,21 +242,21 @@ public class LobbyPresenter
         // 방장, finalMap, ready 상태 등 시작 조건은 RoomService에 모아둡니다.
         if (!roomService.CanStartGame())
         {
-            view.SetStatus("Cannot start game yet.");
+            view.SetStatus("아직 게임을 시작할 수 없습니다.");
             RefreshViewState();
             return;
         }
 
         await RunBusyAsync(async () =>
         {
-            view.SetStatus("Starting game...");
+            view.SetStatus("게임 시작 중...");
             PlayLocalSfx(SoundId.GameStart);
 
             // 현재는 room status를 Starting으로 바꾸는 단계입니다.
             // 다음 단계에서 Relay 생성과 Netcode 시작이 이어집니다.
             if (relayGameStartService == null)
             {
-                view.SetStatus("Relay service is missing.");
+                view.SetStatus("Relay 서비스가 연결되어 있지 않습니다.");
                 return;
             }
 
@@ -274,7 +274,7 @@ public class LobbyPresenter
 
             if (!hostStarted)
             {
-                view.SetStatus("Failed to start relay host.");
+                view.SetStatus("Relay 호스트 시작에 실패했습니다.");
                 return;
             }
 
@@ -332,31 +332,31 @@ public class LobbyPresenter
 
         if (room == null)
         {
-            view.SetStatus("Cannot start game. Room is missing.");
+            view.SetStatus("게임을 시작할 수 없습니다. 방 정보가 없습니다.");
             return;
         }
 
         if (room.FinalMap == null)
         {
-            view.SetStatus("Cannot start game. Final map is missing.");
+            view.SetStatus("게임을 시작할 수 없습니다. 최종 맵이 없습니다.");
             return;
         }
 
         if (string.IsNullOrWhiteSpace(gameSceneName))
         {
-            view.SetStatus("Cannot start game. Game scene name is empty.");
+            view.SetStatus("게임을 시작할 수 없습니다. 게임 씬 이름이 비어 있습니다.");
             return;
         }
 
         if (sceneLoader == null)
         {
-            view.SetStatus("Cannot start game. SceneLoader is missing.");
+            view.SetStatus("게임을 시작할 수 없습니다. SceneLoader가 없습니다.");
             return;
         }
 
         if (GameSessionContext.Instance == null)
         {
-            view.SetStatus("Cannot start game. GameSessionContext is missing.");
+            view.SetStatus("게임을 시작할 수 없습니다. GameSessionContext가 없습니다.");
             return;
         }
 
@@ -371,7 +371,7 @@ public class LobbyPresenter
                 authService.UserId,
                 room.HostUserId);
 
-            view.SetStatus("Loading game scene...");
+            view.SetStatus("게임 씬 불러오는 중...");
             // 씬 이동 전에 로비 listener를 끊어 이전 Presenter가 추가 콜백을 받지 않게 합니다.
             roomService.StopListening();
 
@@ -380,7 +380,7 @@ public class LobbyPresenter
         catch (Exception e)
         {
             Debug.LogError($"[LobbyPresenter] Failed to load game scene: {e}");
-            view.SetStatus("Failed to load game scene.");
+            view.SetStatus("게임 씬을 불러오지 못했습니다.");
             isMovingToGameScene = false;
         }
     }
@@ -394,19 +394,19 @@ public class LobbyPresenter
 
         if (room == null || string.IsNullOrWhiteSpace(room.RelayJoinCode))
         {
-            view.SetStatus("Waiting for relay join code...");
+            view.SetStatus("Relay 참가 코드를 기다리는 중...");
             return;
         }
 
         if (relayGameStartService == null)
         {
-            view.SetStatus("Relay service is missing.");
+            view.SetStatus("Relay 서비스가 연결되어 있지 않습니다.");
             return;
         }
 
         if (GameSessionContext.Instance == null)
         {
-            view.SetStatus("Cannot start client. GameSessionContext is missing.");
+            view.SetStatus("클라이언트를 시작할 수 없습니다. GameSessionContext가 없습니다.");
             return;
         }
 
@@ -419,7 +419,7 @@ public class LobbyPresenter
                 authService.UserId,
                 room.HostUserId);
 
-            view.SetStatus("Joining relay...");
+            view.SetStatus("Relay 참가 중...");
 
             bool clientStarted = await relayGameStartService.StartClientWithRelayAsync(
                 room.RoomId,
@@ -428,7 +428,7 @@ public class LobbyPresenter
 
             if (!clientStarted)
             {
-                view.SetStatus("Failed to join relay.");
+                view.SetStatus("Relay 참가에 실패했습니다.");
                 isStartingRelayClient = false;
                 return;
             }
@@ -438,7 +438,7 @@ public class LobbyPresenter
         catch (Exception e)
         {
             Debug.LogError($"[LobbyPresenter] Failed to start relay client: {e}");
-            view.SetStatus("Failed to join relay.");
+            view.SetStatus("Relay 참가에 실패했습니다.");
             isStartingRelayClient = false;
         }
     }
@@ -477,7 +477,7 @@ public class LobbyPresenter
 
         if (userData == null)
         {
-            view.SetUserInfo("Unknown", "#FFFFFF", authService.UserId);
+            view.SetUserInfo("알 수 없음", "#FFFFFF", authService.UserId);
             return;
         }
 

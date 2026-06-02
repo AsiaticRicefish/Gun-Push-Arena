@@ -51,7 +51,7 @@ public class RoomService
         // 방 생성은 로그인한 유저만 할 수 있습니다.
         if (!authService.IsLoggedIn)
         {
-            NotifyError("Login is required.");
+            NotifyError("로그인이 필요합니다.");
             return null;
         }
 
@@ -77,14 +77,14 @@ public class RoomService
         // 방 참가도 로그인 상태가 필요합니다.
         if (!authService.IsLoggedIn)
         {
-            NotifyError("Login is required.");
+            NotifyError("로그인이 필요합니다.");
             return false;
         }
 
         // 빈 방 코드를 Firestore에 요청하지 않도록 먼저 막습니다.
         if (string.IsNullOrWhiteSpace(roomId))
         {
-            NotifyError("Room code is empty.");
+            NotifyError("방 코드가 비어 있습니다.");
             return false;
         }
 
@@ -139,7 +139,7 @@ public class RoomService
         // 맵 테마 변경은 방장만 가능합니다.
         if (!CanHostControlRoom())
         {
-            NotifyError("Only host can change theme.");
+            NotifyError("방장만 맵 프리셋을 변경할 수 있습니다.");
             return;
         }
 
@@ -153,7 +153,7 @@ public class RoomService
         // ready는 현재 방에 들어와 있을 때만 변경할 수 있습니다.
         if (CurrentRoom == null)
         {
-            NotifyError("You are not in a room.");
+            NotifyError("현재 방에 들어가 있지 않습니다.");
             return;
         }
 
@@ -168,7 +168,7 @@ public class RoomService
         // AI 맵 생성 시작 상태로 바꾸는 것도 방장 전용입니다.
         if (!CanHostControlRoom())
         {
-            NotifyError("Only host can generate map.");
+            NotifyError("방장만 맵을 생성할 수 있습니다.");
             return;
         }
 
@@ -182,14 +182,14 @@ public class RoomService
         // 최종 맵 저장은 모든 클라이언트가 같은 맵을 쓰게 만드는 핵심 작업이므로 방장만 허용합니다.
         if (!CanHostControlRoom())
         {
-            NotifyError("Only host can save final map.");
+            NotifyError("방장만 최종 맵을 저장할 수 있습니다.");
             return;
         }
 
         // null 맵이 저장되면 다른 클라이언트가 맵을 만들 수 없으므로 미리 방어합니다.
         if (finalMap == null)
         {
-            NotifyError("Final map is null.");
+            NotifyError("최종 맵이 비어 있습니다.");
             return;
         }
 
@@ -203,7 +203,7 @@ public class RoomService
         // Relay Join Code는 게임 시작 단계에서 방장이 생성해서 공유하는 값입니다.
         if (!CanHostControlRoom())
         {
-            NotifyError("Only host can set relay join code.");
+            NotifyError("방장만 Relay 참가 코드를 설정할 수 있습니다.");
             return;
         }
 
@@ -218,7 +218,7 @@ public class RoomService
         // UI 버튼 활성화 조건과 실제 실행 조건이 같은 기준을 쓰게 하기 위함입니다.
         if (!CanStartGame())
         {
-            NotifyError("Cannot start game yet.");
+            NotifyError("아직 게임을 시작할 수 없습니다.");
             return;
         }
 

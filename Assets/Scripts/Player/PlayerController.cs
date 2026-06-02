@@ -166,7 +166,7 @@ public class PlayerController : NetworkBehaviour
         PlayerNetworkData playerData = new PlayerNetworkData
         {
             Uid = string.IsNullOrEmpty(userData.Uid) ? auth.UserId : userData.Uid,
-            Nickname = string.IsNullOrEmpty(userData.Nickname) ? "Player" : userData.Nickname,
+            Nickname = string.IsNullOrEmpty(userData.Nickname) ? "플레이어" : userData.Nickname,
             ColorHex = string.IsNullOrEmpty(userData.ColorHex) ? "#FFFFFF" : userData.ColorHex
         };
 

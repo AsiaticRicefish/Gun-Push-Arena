@@ -34,12 +34,12 @@ public sealed class GameResultUIView : MonoBehaviour
 
     public void ShowWin()
     {
-        Show("You Win", new Color(0.34f, 1f, 0.62f));
+        Show("승리!", new Color(0.34f, 1f, 0.62f));
     }
 
     public void ShowLose()
     {
-        Show("You Lose", new Color(1f, 0.42f, 0.42f));
+        Show("패배", new Color(1f, 0.42f, 0.42f));
     }
 
     public void Hide()

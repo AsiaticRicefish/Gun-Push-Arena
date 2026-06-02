@@ -17,7 +17,7 @@ public class LobbyPlayerSlotView : MonoBehaviour
     {
         if (nicknameText != null)
         {
-            nicknameText.text = "Waiting...";
+            nicknameText.text = "대기 중...";
         }
 
         if (roleText != null)
@@ -51,12 +51,12 @@ public class LobbyPlayerSlotView : MonoBehaviour
 
         if (roleText != null)
         {
-            roleText.text = isHost ? "Host" : "Guest";
+            roleText.text = isHost ? "방장" : "참가자";
         }
 
         if (readyText != null)
         {
-            readyText.text = isHost ? "Ready" : (player.IsReady ? "Ready" : "Not Ready");
+            readyText.text = isHost ? "준비 완료" : (player.IsReady ? "준비 완료" : "준비 전");
         }
 
         if (colorImage != null && ColorUtility.TryParseHtmlString(player.ColorHex, out Color color))

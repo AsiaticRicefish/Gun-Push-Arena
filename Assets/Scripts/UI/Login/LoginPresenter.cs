@@ -26,13 +26,13 @@ public class LoginPresenter
     public async Task HandleGuestLoginAsync()
     {
         view.SetGuestLoginInteractable(false);
-        view.SetStatus("Signing in...");
+        view.SetStatus("로그인 중...");
 
         bool success = await authService.GuestLoginAsync();
 
         if (success)
         {
-            view.SetStatus("Signed in.");
+            view.SetStatus("로그인되었습니다.");
 
             if (authService.CurrentUserData.IsNicknameSet)
             {
@@ -44,7 +44,7 @@ public class LoginPresenter
             return;
         }
 
-        view.SetStatus("Guest login failed.");
+        view.SetStatus("게스트 로그인에 실패했습니다.");
         view.SetGuestLoginInteractable(true);
     }
 
@@ -59,13 +59,13 @@ public class LoginPresenter
 
         if (!UserDataService.IsValidNickname(nickname))
         {
-            view.ShowNotice("Nickname must be 2-12 characters.");
+            view.ShowNotice("닉네임은 2자 이상 12자 이하로 입력해 주세요.");
             return;
         }
 
         isNicknameSaveInProgress = true;
         view.SetNicknameConfirmInteractable(false);
-        view.SetStatus("Saving nickname...");
+        view.SetStatus("닉네임 저장 중...");
 
         try
         {
@@ -73,7 +73,7 @@ public class LoginPresenter
 
             if (result == NicknameUpdateResult.Success)
             {
-                view.SetStatus("Nickname saved.");
+                view.SetStatus("닉네임이 저장되었습니다.");
                 await LoadLobbySceneAsync();
                 return;
             }
@@ -82,7 +82,7 @@ public class LoginPresenter
         }
         catch
         {
-            view.ShowNotice("Nickname save failed.");
+            view.ShowNotice("닉네임 저장에 실패했습니다.");
         }
         finally
         {
@@ -105,13 +105,13 @@ public class LoginPresenter
         switch (result)
         {
             case NicknameUpdateResult.Duplicate:
-                return "Nickname is already taken.";
+                return "이미 사용 중인 닉네임입니다.";
             case NicknameUpdateResult.Invalid:
-                return "Nickname must be 2-12 characters.";
+                return "닉네임은 2자 이상 12자 이하로 입력해 주세요.";
             case NicknameUpdateResult.NotLoggedIn:
-                return "Login is required.";
+                return "로그인이 필요합니다.";
             default:
-                return "Nickname save failed.";
+                return "닉네임 저장에 실패했습니다.";
         }
     }
 
