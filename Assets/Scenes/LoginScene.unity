@@ -746,7 +746,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 399.3634}
+  m_AnchoredPosition: {x: 21, y: 496}
   m_SizeDelta: {x: 1920, y: 156.3416}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &520455833
@@ -1117,7 +1117,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f6a393ebfd308454b829d08e101963ac, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AuthManager
-  AddUserTest: 1
+  AddUserTest: 0
 --- !u!4 &713223295
 Transform:
   m_ObjectHideFlags: 0
