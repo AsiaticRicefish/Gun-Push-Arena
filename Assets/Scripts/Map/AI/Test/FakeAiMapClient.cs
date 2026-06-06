@@ -9,19 +9,28 @@ public class FakeAiMapClient : IAiMapClient
         {
             success = true,
             errorMessage = string.Empty,
-            map = CreateSampleMap()
+            map = CreateSampleMap(request)
         };
 
         return Task.FromResult(response);
     }
 
-    private AiMapLayoutDto CreateSampleMap()
+    private AiMapLayoutDto CreateSampleMap(AiMapGenerateRequest request)
     {
-        return CreateBalancedMap();
+        int seed = request != null && request.seed != 0
+            ? request.seed
+            : System.Environment.TickCount;
+
+        int normalizedSeed = seed & int.MaxValue;
+
+        return normalizedSeed % 2 == 0
+            ? CreateBalancedMap(seed)
+            : CreateSplitMap(seed);
     }
 
-    private AiMapLayoutDto CreateBalancedMap()
+    private AiMapLayoutDto CreateBalancedMap(int seed)
     {
+        System.Random random = new System.Random(seed & int.MaxValue);
         int width = 17;
         int height = 11;
 
@@ -38,14 +47,16 @@ public class FakeAiMapClient : IAiMapClient
         SetEmpty(tiles, width, 12, 6);
         SetEmpty(tiles, width, 13, 6);
 
+        SetFloor(tiles, width, 8, random.Next(3, 8));
         SetFloor(tiles, width, 3, 5);
         SetFloor(tiles, width, 13, 5);
 
         return CreateLayoutDto(width, height, tiles);
     }
 
-    private AiMapLayoutDto CreateSplitMap()
+    private AiMapLayoutDto CreateSplitMap(int seed)
     {
+        System.Random random = new System.Random(seed & int.MaxValue);
         int width = 17;
         int height = 11;
 
@@ -66,6 +77,7 @@ public class FakeAiMapClient : IAiMapClient
         SetEmpty(tiles, width, 12, 6);
         SetEmpty(tiles, width, 13, 6);
 
+        SetFloor(tiles, width, 8, random.Next(3, 8));
         SetFloor(tiles, width, 3, 5);
         SetFloor(tiles, width, 13, 5);
 

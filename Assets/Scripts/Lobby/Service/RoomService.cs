@@ -143,6 +143,11 @@ public class RoomService
             return;
         }
 
+        if (CurrentRoom.SelectedTheme == theme.ToString())
+        {
+            return;
+        }
+
         await roomRepository.UpdateThemeAsync(
             CurrentRoom.RoomId,
             theme).AsUniTask();

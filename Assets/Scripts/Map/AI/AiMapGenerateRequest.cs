@@ -11,4 +11,5 @@ public class AiMapGenerateRequest
     public int width;
     public int height;
     public int playerCount;
+    public int seed;
 }

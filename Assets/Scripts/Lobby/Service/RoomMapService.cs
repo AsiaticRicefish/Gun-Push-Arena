@@ -64,7 +64,8 @@ public class RoomMapService
             roomId = room.RoomId,
             width = room.MapWidth,
             height = room.MapHeight,
-            playerCount = room.PlayerCount
+            playerCount = room.PlayerCount,
+            seed = CreateGenerationSeed()
         };
 
         // 선택된 테마에 맞는 AI 클라이언트를 생성합니다.
@@ -121,5 +122,11 @@ public class RoomMapService
     {
         // Firestore string 값을 AiMapTheme enum 값으로 안전하게 변환합니다.
         return Enum.TryParse(themeText, out theme);
+    }
+
+    private int CreateGenerationSeed()
+    {
+        int seed = Guid.NewGuid().GetHashCode() & int.MaxValue;
+        return seed != 0 ? seed : (Environment.TickCount & int.MaxValue);
     }
 }

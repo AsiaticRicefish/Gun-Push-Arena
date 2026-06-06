@@ -44,7 +44,7 @@ public sealed class OllamaAiMapClient : IAiMapClient
             return Fail("AI map request is null.");
         }
 
-        string prompt = BuildIntentPrompt();
+        string prompt = BuildIntentPrompt(request);
         string requestJson = JsonUtility.ToJson(new OllamaGenerateRequest
         {
             model = model,
@@ -77,6 +77,11 @@ public sealed class OllamaAiMapClient : IAiMapClient
             return Fail(errorMessage);
         }
 
+        if (request.seed != 0)
+        {
+            intent.seed = request.seed;
+        }
+
         AiMapLayoutDto map = mapBuilder.Build(intent, request);
 
         return new AiMapGenerateResponse
@@ -87,9 +92,10 @@ public sealed class OllamaAiMapClient : IAiMapClient
         };
     }
 
-    private string BuildIntentPrompt()
+    private string BuildIntentPrompt(AiMapGenerateRequest request)
     {
         string selectedThemeId = ToThemeId(selectedTheme);
+        int seed = request != null ? request.seed : Environment.TickCount;
 
         return $@"
 You create a compact JSON option intent for a Unity 2D arena map.
@@ -102,6 +108,7 @@ Do not create tile arrays.
 The selected map structure preset is ""{selectedThemeId}"".
 You must keep theme exactly ""{selectedThemeId}"".
 Only choose variation options inside this selected structure preset.
+Use seed {seed} for this generation.
 
 Allowed values:
 - theme: ""balanced"", ""split"", ""vertical"", ""chaos""
@@ -125,7 +132,7 @@ Output schema:
   ""dangerLevel"": ""medium"",
   ""wallDensity"": ""none"",
   ""platformScale"": ""medium"",
-  ""seed"": 12345
+  ""seed"": {seed}
 }}
 ";
     }

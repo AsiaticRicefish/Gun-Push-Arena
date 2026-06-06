@@ -264,6 +264,9 @@ public class FirestoreRoomRepository : IRoomRepository
         return roomRef.UpdateAsync(new Dictionary<string, object>
         {
             { nameof(RoomState.SelectedTheme), theme.ToString() },
+            { nameof(RoomState.FinalMap), null },
+            { nameof(RoomState.Status), RoomStatus.Waiting.ToString() },
+            { nameof(RoomState.MapVersion), FieldValue.Increment(1) },
             { nameof(RoomState.UpdatedAt), Timestamp.GetCurrentTimestamp() }
         });
     }
